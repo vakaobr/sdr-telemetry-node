@@ -14,7 +14,10 @@
   - Node B (192.168.31.71, "tattoine-watcher-beacon"): base-provisioned early (docker/blacklist/udev/health→NodeA broker). ⚠️ UNDER-VOLTAGE (0x50005) — replace PSU before Phase 8.
   - Phase 3 (gateway core): ✓ Complete — ingest→state→priority→WS/REST live on Node A. 43 tests (incl. TR-1 latency probe), lint clean. Hardware-verified: 1 Hz delta cadence (median 1.01 s), topic filter live, both-node health via MQTT bridge, RAM caps enforced (gw 45 MB / readsb 56 MB / mosq 4 MB).
   - Phase 4 (web foundation): ✓ Complete — live dashboard at http://192.168.31.218:8080. WS client (reconnect-backoff, tested w/ fake sockets), zustand store (snapshot-authoritative), Leaflet canvas map (rotated icons/trails/rings, imperative sync), responsive list/detail, dark theme, tile cache (fetch-once→offline), SPA volume-mounted (UI deploys = rsync, no rebuild). 11 web tests; 54 total. **= M1 exit** (48 h soak running passively).
-  - Phase 5 (enrichment + rules + sightings): ⏳ next
+  - Phase 5 (enrichment + rules + sightings): ✓ Complete (db3277a) — 620k-row offline aircraft DB (28 s import), local→cache→online chain w/ adsbdb routes, emergency/military/watchlist rules (same-tick flags, fire-once events → WS+MQTT), batched sightings (≤60 s loss window), watchlist API, alert banner. Live-verified: AFR99MY LPPT→LFPG w/ reg+type+operator; late-callsign re-enrich bug found live & regression-tested. 91 tests.
+  - UX follow-ups shipped (e6c8825 detail-pane z-index + pan-to-selected; b747195 tar1090-style map icons: type silhouettes, altitude colors, zoom scaling — 95 tests total)
+  - Phase 6 (hero + TV mode): ✓ Complete — /tv kiosk route live: FlightWall hero (giant callsign/type/route/alt/dist, altitude-colored), anti-flap HeroSelector (hysteresis, emergency override — 7 unit tests), 12 s rotation hero→map→stats, OLED pixel-shift, cursor-hide, emergency forces hero, kiosk docs. 102 tests. **= M2 exit pending the 7-day wall soak** (starts when mounted).
+  - Phase 7 (radio2 FSM off-hardware): ⏳ next
   - DEVIATION: readsb+tar1090 ship as ONE container (sdr-enthusiasts ultrafeeder) — community-standard packaging, fewer moving parts on 1 GB; noted in compose header.
 - [ ] Review - Not started
 - [ ] Security - Not started

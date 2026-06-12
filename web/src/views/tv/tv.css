@@ -1,0 +1,68 @@
+/* TV mode — 10-ft typography (≥24 px @1080p), dark, no interaction (NFR/UX #1#3#5) */
+.tv-root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  cursor: none;
+  user-select: none;
+  overflow: hidden;
+  transition: transform 2s ease; /* gentle pixel-shift */
+}
+
+.tv-root > :first-child { flex: 1; min-height: 0; }
+
+/* hero */
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1.2rem;
+  text-align: center;
+  padding: 3rem;
+  animation: hero-in 0.9s ease;
+}
+@keyframes hero-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; } }
+
+.hero-callsign { font-size: 9rem; font-weight: 800; letter-spacing: 0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.hero-type { font-size: 3rem; color: var(--accent); font-weight: 600; }
+.hero-operator { color: var(--text); font-weight: 400; }
+.hero-route { font-size: 3.4rem; font-weight: 700; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
+.hero-grid { display: flex; gap: 4rem; margin-top: 1.5rem; }
+.hero-stat { display: flex; flex-direction: column; gap: 0.4rem; }
+.hero-label { font-size: 1.4rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+.hero-value { font-size: 2.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hero-cardinal { color: var(--muted); font-size: 2rem; }
+.hero-country { font-size: 1.6rem; color: var(--muted); }
+.hero-empty { color: var(--muted); }
+.hero-listening { font-size: 4rem; font-weight: 600; }
+.hero-sub { font-size: 1.8rem; margin-top: 1rem; }
+.hero-emergency { animation: hero-in 0.3s ease; }
+.hero-alert {
+  font-size: 3rem; font-weight: 800; color: white; background: var(--crit);
+  padding: 1rem 3rem; border-radius: 12px; animation: pulse 1s infinite alternate;
+}
+
+/* map panel: full-bleed, non-interactive */
+.tv-map { height: 100%; pointer-events: none; }
+
+/* stats */
+.tv-stats { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3rem; height: 100%; }
+.tv-stats-grid { display: flex; gap: 6rem; }
+.tv-stat { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+.tv-stat-value { font-size: 7rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tv-stat-radio { color: var(--accent); }
+.tv-stat-label { font-size: 1.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+.tv-nextpass { font-size: 2.2rem; color: var(--accent); }
+
+/* footer strip */
+.tv-footer {
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: 0.8rem 2rem; justify-content: flex-end;
+  font-size: 1.5rem; color: var(--muted);
+}
+.tv-clock { font-variant-numeric: tabular-nums; }
+.tv-dots { display: flex; gap: 0.5rem; }
+.tv-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+.tv-dot-on { background: var(--accent); }

@@ -17,6 +17,7 @@ export interface ReceiverInfo {
   lat: number;
   lon: number;
   rangeRingsKm: number[];
+  tvRotation?: string[];
 }
 
 function aircraftIcon(ac: Aircraft, selected: boolean, sizePx: number): L.DivIcon {

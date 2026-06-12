@@ -21,6 +21,10 @@ def mount_web(app: FastAPI) -> None:
         @app.get("/", include_in_schema=False)
         async def spa_index() -> FileResponse:
             return FileResponse(index)
+
+        @app.get("/tv", include_in_schema=False)
+        async def spa_tv() -> FileResponse:
+            return FileResponse(index)  # client routes on pathname (kiosk URL)
     else:
 
         @app.get("/", include_in_schema=False)

@@ -6,7 +6,12 @@ import { useEffect, useState } from "react";
 import type { ReceiverInfo } from "./components/Map/AircraftMap";
 import { useStore } from "./state/store";
 import { InteractiveView } from "./views/interactive/InteractiveView";
+import { TvView } from "./views/tv/TvView";
 import { WsClient } from "./ws/client";
+
+function isTvMode(): boolean {
+  return window.location.pathname === "/tv" || window.location.hash === "#tv";
+}
 
 export function App() {
   const [receiver, setReceiver] = useState<ReceiverInfo | null>(null);
@@ -25,6 +30,7 @@ export function App() {
             lat: cfg.receiver.lat,
             lon: cfg.receiver.lon,
             rangeRingsKm: cfg.ui?.rangeRingsKm ?? [50, 100, 150],
+            tvRotation: cfg.ui?.tvRotation,
           });
         }
       })
@@ -47,5 +53,5 @@ export function App() {
   if (!receiver) {
     return <main className="boot-msg">connecting…</main>;
   }
-  return <InteractiveView receiver={receiver} />;
+  return isTvMode() ? <TvView receiver={receiver} /> : <InteractiveView receiver={receiver} />;
 }
