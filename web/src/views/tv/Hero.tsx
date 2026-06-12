@@ -2,6 +2,7 @@
 import { useRef } from "react";
 import { sortedAircraft, useStore } from "../../state/store";
 import { altitudeColor } from "../../components/Map/icons";
+import { decorateRoute, flagForCountryName } from "../../lib/flags";
 import { HeroSelector } from "./heroSelect";
 
 function fmt(n: number | null | undefined, unit: string, digits = 0): string {
@@ -37,7 +38,7 @@ export function Hero() {
         {e?.typeName ?? e?.typeCode ?? "Unknown type"}
         {e?.operator ? <span className="hero-operator"> · {e.operator}</span> : null}
       </div>
-      {e?.route && <div className="hero-route">{e.route}</div>}
+      {e?.route && <div className="hero-route">{decorateRoute(e.route)}</div>}
       <div className="hero-grid">
         <div className="hero-stat">
           <span className="hero-label">Altitude</span>
@@ -61,7 +62,11 @@ export function Hero() {
           <span className="hero-value">{e?.registration ?? hero.icao.toUpperCase()}</span>
         </div>
       </div>
-      {e?.country && <div className="hero-country">{e.country}</div>}
+      {e?.country && (
+        <div className="hero-country">
+          {flagForCountryName(e.country)} {e.country}
+        </div>
+      )}
       {emergency && <div className="hero-alert">⚠ EMERGENCY · SQUAWK {hero.squawk}</div>}
     </div>
   );

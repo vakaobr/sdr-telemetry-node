@@ -1,4 +1,5 @@
 /** Per-aircraft detail (FR-8.5) — graceful placeholders, never broken layout (UX #4). */
+import { decorateRoute, flagForCountryName } from "../../lib/flags";
 import { useStore } from "../../state/store";
 
 function Row({ label, value }: { label: string; value: string | number | null | undefined }) {
@@ -26,7 +27,11 @@ export function DetailPane() {
       <Row label="Registration" value={e?.registration} />
       <Row label="Type" value={e?.typeName ?? e?.typeCode} />
       <Row label="Operator" value={e?.operator} />
-      <Row label="Route" value={e?.route} />
+      <Row label="Route" value={e?.route ? decorateRoute(e.route) : null} />
+      <Row
+        label="Country"
+        value={e?.country ? `${flagForCountryName(e.country)} ${e.country}` : null}
+      />
       <Row label="Altitude" value={ac.altFt != null ? `${ac.altFt.toLocaleString()} ft` : null} />
       <Row label="Ground speed" value={ac.gsKt != null ? `${Math.round(ac.gsKt)} kt` : null} />
       <Row
