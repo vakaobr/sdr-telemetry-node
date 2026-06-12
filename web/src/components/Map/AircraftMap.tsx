@@ -68,10 +68,20 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
 
   // aircraft sync — subscribe to store outside React's render cycle
   useEffect(() => {
+    let lastSelected: string | null = null;
     const sync = () => {
       const map = mapRef.current;
       if (!map) return;
       const { aircraft, selectedIcao, select } = useStore.getState();
+
+      // selection changed → pan to the aircraft (tar1090-style)
+      if (selectedIcao && selectedIcao !== lastSelected) {
+        const sel = aircraft[selectedIcao];
+        if (sel?.lat != null && sel.lon != null) {
+          map.panTo([sel.lat, sel.lon], { animate: true });
+        }
+      }
+      lastSelected = selectedIcao;
       const markers = markersRef.current;
       const trails = trailsRef.current;
 

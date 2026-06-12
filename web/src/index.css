@@ -67,7 +67,8 @@ html, body, #root {
 
 .detail-pane {
   position: absolute;
-  right: 320px;
+  z-index: 1100; /* above Leaflet panes (≤400) and its controls (1000) */
+  right: 332px;
   top: 0.75rem;
   width: 300px;
   max-height: calc(100% - 1.5rem);
