@@ -1,0 +1,48 @@
+# sdr-telemetry-node configuration
+# Copy to config.yaml and adjust. Validated at startup (services refuse to boot on errors).
+# Same file ships to both nodes; each role reads its relevant sections.
+
+receiver:
+  lat: 38.7169        # decimal degrees, required
+  lon: -9.1399
+  alt_m: 45
+
+nodes:
+  gateway_url: "http://tattoine-watcher.local:8080"   # Node B uses this for image upload
+  mqtt_host: "tattoine-watcher.local"
+  mqtt_port: 1883
+
+adsb:
+  readsb_url: "http://readsb:8079"   # aircraft.json source (loopback in node-a compose)
+  poll_interval_s: 1.0
+  staleness_pos_s: 60                # drop position after N s without one
+  staleness_msg_s: 300               # drop aircraft after N s without any message
+  trail_len: 100
+
+radio2:
+  schedule:                          # empty list = ATC-only static mode
+    - { mode: atc, from: "07:00", to: "23:00" }
+    - { mode: ais, from: "23:00", to: "07:00" }
+  satellite:
+    min_elevation_deg: 30
+    apt: { enabled: true }
+    lrpt: { enabled: false }         # experimental on 1 GB nodes (ADR-006)
+  atc:
+    channels_mhz: [118.1, 121.5]
+    icecast_url: "http://nodeb.local:8000/atc"
+
+enrichment:
+  online:
+    enabled: true                    # auto-degrades when offline; never blocks rendering
+    cache_ttl_days: 30
+
+watchlist:
+  - { match: hex, value: "3e8413" }
+  - { match: callsign_glob, value: "RCH*" }
+
+retention:
+  sightings_days: 30
+  passes_keep: 50
+
+ui:
+  tv_rotation: [hero, map, stats]    # satellite panel added when P10 ships

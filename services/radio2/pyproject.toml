@@ -1,0 +1,38 @@
+[project]
+name = "radio2"
+version = "0.1.0"
+description = "sdr-telemetry-node radio2: SDR#2 supervisor — FSM, pass scheduler, decoder child processes"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.9",
+    "PyYAML>=6.0",
+    "paho-mqtt>=2.1",
+    "skyfield>=1.49",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.7",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["app/models/generated_*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
