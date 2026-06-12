@@ -48,7 +48,11 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
       zoomControl: true,
       attributionControl: false,
     });
-    L.tileLayer("/tiles/{z}/{x}/{y}.png", { maxZoom: 12, minZoom: 5 }).addTo(map);
+    L.tileLayer("/tiles/{z}/{x}/{y}.png", {
+      maxZoom: 12,
+      minZoom: 5,
+      className: "base-tiles", // dark filter scoped to this layer only (see map.css)
+    }).addTo(map);
 
     // receiver + range rings
     L.circleMarker([receiver.lat, receiver.lon], {
@@ -135,18 +139,20 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    if (airspaceOn && !airspaceRef.current) {
+    const show = airspaceOn && receiver.airspaceAvailable;
+    if (show && !airspaceRef.current) {
       airspaceRef.current = L.tileLayer("/tiles/openaip/{z}/{x}/{y}.png", {
         maxZoom: 14,
-        opacity: 0.85,
+        opacity: 1, // native OpenAIP colors; visibility boosted via CSS (map.css)
+        className: "airspace-tiles",
         // sits in the tile pane: above the base map, below aircraft markers
       });
       airspaceRef.current.addTo(map);
-    } else if (!airspaceOn && airspaceRef.current) {
+    } else if (!show && airspaceRef.current) {
       airspaceRef.current.remove();
       airspaceRef.current = null;
     }
-  }, [airspaceOn]);
+  }, [airspaceOn, receiver.airspaceAvailable]);
 
   return <div ref={containerRef} className="map-container" data-testid="aircraft-map" />;
 }

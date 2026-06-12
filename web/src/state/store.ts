@@ -46,9 +46,10 @@ const AIRSPACE_KEY = "sdr.airspaceOverlay";
 
 function loadAirspacePref(): boolean {
   try {
-    return localStorage.getItem(AIRSPACE_KEY) === "1";
+    const v = localStorage.getItem(AIRSPACE_KEY);
+    return v === null ? true : v === "1"; // on by default; respects explicit toggle-off
   } catch {
-    return false;
+    return true;
   }
 }
 

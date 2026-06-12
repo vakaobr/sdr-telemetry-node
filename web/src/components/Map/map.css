@@ -18,7 +18,13 @@
   filter: drop-shadow(0 0 6px #f59e0b);
 }
 
-/* dark map: dim the raster tiles instead of needing a dark tile set */
-.leaflet-tile {
+/* dark map: dim ONLY the base raster tiles (scoped via the layer className), so
+   the OpenAIP overlay keeps its native colors instead of being inverted/muted */
+.base-tiles .leaflet-tile {
   filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+/* airspace overlay: boost saturation/contrast so it pops on the dark base */
+.airspace-tiles .leaflet-tile {
+  filter: saturate(1.5) contrast(1.15) brightness(1.1);
 }
