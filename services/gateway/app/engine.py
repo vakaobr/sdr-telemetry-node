@@ -26,6 +26,7 @@ from app.models.generated_ws import AdsbHealth, SystemHealth
 from app.persist.sightings import SightingsRecorder
 from app.rules import interesting as rules
 from app.state.aircraft import AircraftTable
+from app.state.vessels import VesselTable
 from app.ws.hub import Hub
 
 log = logging.getLogger("gateway.engine")
@@ -52,6 +53,7 @@ class Engine:
         self._recorder = recorder
         self.watchlist: list[WatchlistEntry] = list(config.watchlist)
         self.table = AircraftTable(config, flags_fn=self._compute_flags)
+        self.vessels = VesselTable()
 
         self._pending_enrich: set[str] = set()
         self._enriched_callsign: dict[str, str | None] = {}  # callsign used at last enrich
@@ -118,6 +120,18 @@ class Engine:
                 self._fired_rules.pop(icao, None)
                 self._pending_enrich.discard(icao)
                 self._enriched_callsign.pop(icao, None)
+
+        # vessels (AIS, event-driven via AISStream client) → delta
+        vu, vr = self.vessels.collect_delta(now)
+        if vu or vr:
+            await self.hub.broadcast(
+                {
+                    "type": "vessel_delta",
+                    "ts": now,
+                    "updated": [v.model_dump(mode="json") for v in vu],
+                    "removed": vr,
+                }
+            )
 
         await self._drain_bus_events(now)
 
@@ -294,7 +308,7 @@ class Engine:
             "type": "snapshot",
             "ts": now,
             "aircraft": [a.model_dump(mode="json") for a in aircraft],
-            "vessels": [],  # P9
+            "vessels": [v.model_dump(mode="json") for v in self.vessels.snapshot()],
             "radio2": self._bridge.radio2_status().model_dump(mode="json"),
             "latestPass": None,  # P10
             "health": self.system_health().model_dump(mode="json"),

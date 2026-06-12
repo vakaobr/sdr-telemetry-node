@@ -22,7 +22,9 @@
   - DEFERRED in P8: squelch→atc/activity event generation from rtl_airband (UI pulse wired + ready; event source is best-effort, validate on hardware). OpenAIP airspace overlay (key saved to Pi .env; build post-P8).
   - TOPOLOGY CHANGE (ADR-009, 2026-06-12): dongle can't move to Node B (enclosure) + Pis can't cable to router. Established a **dedicated point-to-point Ethernet link** 10.55.0.1↔10.55.0.2 (static, never-default, persistent prio 100) — verified **94 Mbit/s, 0.9 ms, 0% loss**, internet still on Wi-Fi. New model: both SDRs stay on Node A; Node A serves SDR#2 via SoapySDRServer; Node B decodes over the link (offloads heavy satdump). Node B no longer needs a dongle → unblocked except for its PSU.
   - ROADMAP.md created: R1 SoapyRemote capture-on-A/decode-on-B (next), R2 OpenAIP overlay, R3 single-node profile (Pi 4/5).
-  - Phase 9 (AIS, M4): ⏳ after R1 (revised Node B bring-up)
+  - Phase 9 (AIS): ✓ Complete via AISStream (ADR-010) — internet AIS feed, not local radio. Gateway AisStreamClient (WebSocket, Lisbon bbox, fail-soft reconnect) → VesselTable (30 min staleness) → vessel_delta/snapshot; web teal ship markers; /api/v1/vessels. **Verified live on Node A: 15 real vessels off the Portuguese coast.** 191 tests.
+  - Satellite (FR-7): DEFERRED (ADR-010) — needs own 137 MHz antenna; orchestrator ready if added.
+  - Remaining: R1 ATC audio (airband antenna + Node B power), R3 single-node profile.
   - DEVIATION: readsb+tar1090 ship as ONE container (sdr-enthusiasts ultrafeeder) — community-standard packaging, fewer moving parts on 1 GB; noted in compose header.
 - [ ] Review - Not started
 - [ ] Security - Not started

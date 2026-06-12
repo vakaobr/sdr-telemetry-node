@@ -23,6 +23,7 @@ from app.config import Config, load_config
 from app.engine import Engine
 from app.enrich import localdb
 from app.enrich.service import Enricher
+from app.ingest.aisstream import AisStreamClient, bbox_around
 from app.ingest.readsb import ReadsbClient
 from app.persist.db import Database
 from app.persist.sightings import SightingsRecorder
@@ -72,8 +73,20 @@ def create_app(
         if start_bus:
             bridge.start(asyncio.get_running_loop())
         engine.start()
+        # AIS via AISStream (ADR-010) — only if keyed; fail-soft, never blocks
+        ais: AisStreamClient | None = None
+        ais_key = os.environ.get("AISSTREAM_API_KEY")
+        if ais_key:
+            ais = AisStreamClient(
+                ais_key,
+                bbox_around(config.receiver.lat, config.receiver.lon),
+                engine.vessels,
+            )
+            ais.start()
         yield
         import_task.cancel()
+        if ais:
+            await ais.stop()
         await engine.stop()
         if start_bus:
             bridge.stop()

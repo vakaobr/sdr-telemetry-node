@@ -79,6 +79,7 @@ services:
       - CONFIG_PATH=/config/config.yaml
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - OPENAIP_API_KEY=${OPENAIP_API_KEY:-}   # airspace overlay (R2); from node-a/.env
+      - AISSTREAM_API_KEY=${AISSTREAM_API_KEY:-}   # AIS feed (ADR-010); from node-a/.env
     volumes:
       - /opt/sdr-telemetry-node/config.yaml:/config/config.yaml:ro
       - /opt/sdr-telemetry-node/web/dist:/web/dist:ro   # UI updates = rsync, no rebuild

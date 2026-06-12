@@ -46,6 +46,10 @@ def make_api_router(get_engine: Callable[[], Engine]) -> APIRouter:
             raise Problem(404, "aircraft not tracked", f"icao {icao!r} is not in the live set")
         return ac.model_dump(mode="json")
 
+    @r.get("/vessels")
+    async def list_vessels() -> list[dict]:
+        return [v.model_dump(mode="json") for v in get_engine().vessels.snapshot()]
+
     @r.get("/radio2")
     async def radio2() -> dict:
         return get_engine().radio2_status().model_dump(mode="json")

@@ -18,6 +18,16 @@
   filter: drop-shadow(0 0 6px #f59e0b);
 }
 
+/* AIS vessels — teal, distinct from aircraft */
+.vessel-icon {
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
+  color: #2dd4bf;
+  text-shadow: 0 0 3px #000;
+  cursor: default;
+}
+
 /* dark map: dim ONLY the base raster tiles (scoped via the layer className), so
    the OpenAIP overlay keeps its native colors instead of being inverted/muted */
 .base-tiles .leaflet-tile {

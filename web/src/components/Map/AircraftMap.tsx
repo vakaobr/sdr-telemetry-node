@@ -9,9 +9,20 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useStore } from "../../state/store";
-import type { Aircraft } from "../../types/generated/ws";
+import type { Aircraft, Vessel } from "../../types/generated/ws";
 import { iconHtml, sizeForZoom } from "./icons";
 import "./map.css";
+
+function vesselIcon(v: Vessel): L.DivIcon {
+  // teal chevron pointing along course-over-ground; distinct from aircraft
+  const rot = v.cogDeg ?? 0;
+  return L.divIcon({
+    className: "",
+    html: `<div class="vessel-icon" style="transform: rotate(${rot}deg)">▲</div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
+}
 
 export interface ReceiverInfo {
   lat: number;
@@ -35,6 +46,7 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const trailsRef = useRef<Map<string, L.Polyline>>(new Map());
+  const vesselsRef = useRef<Map<number, L.Marker>>(new Map());
   const airspaceRef = useRef<L.TileLayer | null>(null);
   const airspaceOn = useStore((s) => s.airspaceOverlay);
 
@@ -121,6 +133,29 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
           trails.set(ac.icao, t);
         } else {
           t.setLatLngs(trailPts);
+        }
+      }
+
+      // vessels (AIS) — distinct teal ship markers, separate from aircraft
+      const vessels = useStore.getState().vessels;
+      const vmarkers = vesselsRef.current;
+      for (const [mmsi, marker] of vmarkers) {
+        if (!vessels[mmsi]) {
+          marker.remove();
+          vmarkers.delete(mmsi);
+        }
+      }
+      for (const v of Object.values(vessels)) {
+        const pos: L.LatLngExpression = [v.lat, v.lon];
+        let m = vmarkers.get(v.mmsi);
+        if (!m) {
+          m = L.marker(pos, { icon: vesselIcon(v), keyboard: false, zIndexOffset: -1000 });
+          m.bindTooltip(v.name ?? String(v.mmsi), { direction: "top" });
+          m.addTo(map);
+          vmarkers.set(v.mmsi, m);
+        } else {
+          m.setLatLng(pos);
+          m.setIcon(vesselIcon(v));
         }
       }
     };
