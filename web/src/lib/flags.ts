@@ -81,6 +81,36 @@ export function icaoToCC(code: string): string {
   return ICAO_PREFIX_TO_CC[c.slice(0, 2)] ?? ICAO_SINGLE_TO_CC[c[0]] ?? "";
 }
 
+// MMSI MID (first 3 digits) → ISO alpha-2 (ITU Maritime Identification Digits).
+// Europe + common flags-of-convenience + major maritime nations; misses → no flag.
+const MID_TO_CC: Record<string, string> = {
+  "201": "AL", "202": "AD", "203": "AT", "204": "PT", "205": "BE", "206": "BY",
+  "207": "BG", "209": "CY", "210": "CY", "211": "DE", "212": "CY", "213": "GE",
+  "214": "MD", "215": "MT", "218": "DE", "219": "DK", "220": "DK", "224": "ES",
+  "225": "ES", "226": "FR", "227": "FR", "228": "FR", "229": "MT", "230": "FI",
+  "231": "FO", "232": "GB", "233": "GB", "234": "GB", "235": "GB", "236": "GI",
+  "237": "GR", "238": "HR", "239": "GR", "240": "GR", "241": "GR", "242": "MA",
+  "243": "HU", "244": "NL", "245": "NL", "246": "NL", "247": "IT", "248": "MT",
+  "249": "MT", "250": "IE", "251": "IS", "252": "LI", "253": "LU", "254": "MC",
+  "255": "PT", "256": "MT", "257": "NO", "258": "NO", "259": "NO", "261": "PL",
+  "262": "ME", "263": "PT", "264": "RO", "265": "SE", "266": "SE", "267": "SK",
+  "268": "SM", "269": "CH", "271": "TR", "272": "UA", "273": "RU", "274": "MK",
+  "304": "AG", "305": "AG", "306": "CW", "308": "BS", "309": "BS", "310": "BM",
+  "311": "BS", "312": "BZ", "316": "CA", "319": "KY", "338": "US", "366": "US",
+  "367": "US", "368": "US", "369": "US", "351": "PA", "352": "PA", "353": "PA",
+  "354": "PA", "355": "PA", "356": "PA", "357": "PA", "370": "PA", "371": "PA",
+  "372": "PA", "373": "PA", "374": "PA", "412": "CN", "413": "CN", "414": "CN",
+  "416": "TW", "431": "JP", "432": "JP", "440": "KR", "441": "KR", "477": "HK",
+  "525": "ID", "538": "MH", "563": "SG", "564": "SG", "565": "SG", "566": "SG",
+  "636": "LR", "637": "LR", "710": "BR", "725": "CL",
+};
+
+/** MMSI → flag of the vessel's registry (first 3 digits = ITU MID). */
+export function flagForMmsi(mmsi: number): string {
+  const mid = String(mmsi).padStart(9, "0").slice(0, 3);
+  return flagEmoji(MID_TO_CC[mid] ?? "");
+}
+
 /** "LPPT → LFPO" → "LPPT 🇵🇹 → LFPO 🇫🇷" (flags appended where known). */
 export function decorateRoute(route: string | null | undefined): string {
   if (!route) return "";

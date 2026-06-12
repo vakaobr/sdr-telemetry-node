@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { decorateRoute, flagEmoji, flagForCountryName, icaoToCC } from "./flags";
+import { decorateRoute, flagEmoji, flagForCountryName, flagForMmsi, icaoToCC } from "./flags";
 
 test("flagEmoji builds regional-indicator pairs", () => {
   expect(flagEmoji("PT")).toBe("🇵🇹");
@@ -25,6 +25,14 @@ test("ICAO airport prefixes resolve to country codes", () => {
   expect(icaoToCC("CYYZ")).toBe("CA"); // single-letter region C
   expect(icaoToCC("ZBAA")).toBe("CN"); // single-letter region Z
   expect(icaoToCC("XXXX")).toBe("");   // unknown
+});
+
+test("flagForMmsi maps the MID (first 3 digits) to a flag", () => {
+  expect(flagForMmsi(263422760)).toBe("🇵🇹"); // Portugal
+  expect(flagForMmsi(636020815)).toBe("🇱🇷"); // Liberia (flag of convenience)
+  expect(flagForMmsi(245413000)).toBe("🇳🇱"); // Netherlands
+  expect(flagForMmsi(338123456)).toBe("🇺🇸"); // USA
+  expect(flagForMmsi(999000000)).toBe(""); // unknown MID → no flag
 });
 
 test("decorateRoute appends flags per airport", () => {

@@ -1,5 +1,6 @@
 /** Per-vessel detail (AIS) — mirrors the aircraft DetailPane, shown when a
  *  vessel marker is clicked. Graceful "—" for missing fields (UX #4). */
+import { flagForMmsi } from "../../lib/flags";
 import { useStore } from "../../state/store";
 
 function shipTypeName(t: number | null | undefined): string | null {
@@ -39,7 +40,7 @@ export function VesselDetailPane() {
         <h2>🚢 {v.name ?? `MMSI ${v.mmsi}`}</h2>
         <button onClick={() => useStore.getState().selectVessel(null)} aria-label="close">×</button>
       </header>
-      <Row label="MMSI" value={v.mmsi} />
+      <Row label="MMSI" value={`${flagForMmsi(v.mmsi)} ${v.mmsi}`.trim()} />
       <Row label="Type" value={shipTypeName(v.shipType)} />
       <Row label="Speed" value={v.sogKt != null ? `${v.sogKt.toFixed(1)} kt` : null} />
       <Row label="Course" value={v.cogDeg != null ? `${v.cogDeg.toFixed(0)}°` : null} />

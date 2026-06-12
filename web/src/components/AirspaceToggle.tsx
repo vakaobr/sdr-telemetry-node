@@ -12,7 +12,7 @@ export function AirspaceToggle() {
       aria-pressed={on}
       title="Toggle airspace overlay (CTR/TMA/airways)"
     >
-      ✈ Airspace
+      ✈️ Airspace
     </button>
   );
 }

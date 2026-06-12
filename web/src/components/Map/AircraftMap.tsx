@@ -10,6 +10,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useStore } from "../../state/store";
 import type { Aircraft, Vessel } from "../../types/generated/ws";
+import { flagForMmsi } from "../../lib/flags";
 import { iconHtml, sizeForZoom } from "./icons";
 import "./map.css";
 
@@ -162,7 +163,9 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
               keyboard: false,
               zIndexOffset: -1000,
             });
-            m.bindTooltip(v.name ?? String(v.mmsi), { direction: "top" });
+            m.bindTooltip(`${flagForMmsi(v.mmsi)} ${v.name ?? v.mmsi}`.trim(), {
+              direction: "top",
+            });
             m.on("click", () => selectVessel(v.mmsi));
             m.addTo(map);
             vmarkers.set(v.mmsi, m);
