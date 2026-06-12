@@ -251,6 +251,10 @@ class Engine:
     def radio2_status(self):
         return self._bridge.radio2_status()
 
+    def publish_cmd(self, cmd: dict) -> None:
+        """Forward a manual-override command to the radio2 supervisor (Node B)."""
+        self._bridge.publish("radio2/cmd", cmd, qos=1)
+
     def adsb_health(self) -> AdsbHealth:
         return AdsbHealth.model_validate(
             {

@@ -83,7 +83,8 @@ class Atc(_StrictModel):
 
 
 class Radio2(_StrictModel):
-    schedule: list[ScheduleBlock] = Field(default_factory=list)
+    sdr_serial: str = "stx:0:28"  # consumed by the radio2 service; accepted here so the
+    schedule: list[ScheduleBlock] = Field(default_factory=list)  # shared config validates
     satellite: Satellite = Satellite()
     atc: Atc = Atc()
 
@@ -120,6 +121,7 @@ class Ui(_StrictModel):
 class Config(_StrictModel):
     receiver: Receiver
     nodes: Nodes
+    timezone: str = "UTC"  # IANA tz; radio2 interprets schedule blocks in it
     adsb: Adsb = Adsb()
     radio2: Radio2 = Radio2()
     enrichment: Enrichment = Enrichment()

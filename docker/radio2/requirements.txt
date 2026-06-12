@@ -1,0 +1,6 @@
+# Mirrors services/radio2/pyproject.toml [project.dependencies] (cached layer).
+pydantic>=2.9
+PyYAML>=6.0
+paho-mqtt>=2.1
+skyfield>=1.49
+httpx>=0.27

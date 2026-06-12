@@ -15,6 +15,7 @@ from fastapi import FastAPI
 
 from app.api.aircraft import load_watchlist_overrides, make_api_router
 from app.api.errors import install_error_handlers
+from app.api.radio2 import make_radio2_router
 from app.api.static import mount_web
 from app.api.tiles import make_tiles_router
 from app.bus.mqtt import MqttBridge
@@ -85,6 +86,7 @@ def create_app(
 
     install_error_handlers(app)
     app.include_router(make_api_router(lambda: holder["engine"]))
+    app.include_router(make_radio2_router(lambda: holder["engine"]))
     app.include_router(make_ws_router(lambda: holder["engine"]))
     app.include_router(make_tiles_router())
     mount_web(app)

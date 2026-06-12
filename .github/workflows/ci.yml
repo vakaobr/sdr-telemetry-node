@@ -71,7 +71,7 @@ jobs:
     needs: [python]
     strategy:
       matrix:
-        image: [gateway]   # radio2 image joins in Phase 7/8
+        image: [gateway, radio2]
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3

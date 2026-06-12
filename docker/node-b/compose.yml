@@ -1,0 +1,35 @@
+# Node B (tattoine-watcher-beacon, Pi 3B): shared-radio workhorse.
+# radio2 supervisor (SDR #2 orchestration) [+ Icecast for ATC audio in P8].
+#
+# ⚠️ Requires the Node B PSU swap first (under-voltage 0x50005 — see baseline.md).
+# Decoder modes land per milestone: ATC=P8, AIS=P9, satellite=P10. Until then
+# RADIO2_FAKE can exercise the supervisor with the scripted fake decoder.
+
+name: sdr-telemetry-node-b
+
+services:
+  radio2:
+    build:
+      context: ../..
+      dockerfile: docker/radio2/Dockerfile
+    image: sdr-telemetry-node/radio2:dev
+    container_name: radio2
+    restart: unless-stopped
+    device_cgroup_rules:
+      - "c 189:* rwm"                  # USB (libusb) — SDR #2
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb:ro
+      - /opt/sdr-telemetry-node/config.yaml:/config/config.yaml:ro
+      - radio2-data:/data              # TLE cache
+    environment:
+      - CONFIG_PATH=/config/config.yaml
+      - TLE_PATH=/data/tles.txt
+      - TZ=${TZ:-Europe/Lisbon}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    mem_limit: 256m
+    security_opt:
+      - no-new-privileges:true
+    # icecast joins here in P8 (ATC audio)
+
+volumes:
+  radio2-data:

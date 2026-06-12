@@ -12,6 +12,9 @@ nodes:
   mqtt_host: "tattoine-watcher.local"
   mqtt_port: 1883
 
+# IANA timezone — radio2 interprets schedule block times (below) in this zone
+timezone: "Europe/Lisbon"
+
 adsb:
   readsb_url: "http://readsb:8079"   # aircraft.json source (loopback in node-a compose)
   poll_interval_s: 1.0
@@ -20,6 +23,7 @@ adsb:
   trail_len: 100
 
 radio2:
+  sdr_serial: "stx:0:28"             # SDR #2 (shared radio on Node B)
   schedule:                          # empty list = ATC-only static mode
     - { mode: atc, from: "07:00", to: "23:00" }
     - { mode: ais, from: "23:00", to: "07:00" }
