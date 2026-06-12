@@ -9,7 +9,33 @@ Post-v1 enhancements, ordered. Core build phases live in
 Both dongles stay on Node A; Node A runs SoapySDRServer for SDR #2; Node B
 decoders open the remote device over the dedicated `10.55.0.x` link. Offloads
 ATC/AIS/satellite decode onto Node B. Gated on the Node B PSU swap.
-**Status:** dedicated link done + verified (94 Mbit/s); SoapyRemote wiring next.
+
+**Proven (2026-06-12 live spike):**
+- Debian trixie packages: Node A `soapysdr-tools soapysdr-module-rtlsdr
+  soapyremote-server`; Node B `soapysdr-tools soapysdr-module-remote`.
+- `SoapySDRServer --bind=0.0.0.0:55132` on Node A serves SDR #2 **without
+  disturbing readsb** (readsb keeps `stx:0:29`; server enumerates only on demand).
+- Node B discovers the remote dongles over the link:
+  `SoapySDRUtil --find="remote=tcp://10.55.0.1:55132"` → sees `stx:0:28` + `:29`.
+  Open args: `dict(driver="remote", remote="tcp://10.55.0.1:55132", serial="stx:0:28")`.
+
+**Gotchas found:**
+- A bare host SoapySDR install loads all 12 device modules; opening a Device
+  crashed with `Hash collision!!! Fatal error!!` (UHD/audio module conflict).
+  **Fix:** the radio2 image ships ONLY `remote` + `rtlsdr` modules (set
+  `SOAPY_SDR_PLUGIN_PATH` to a dir with just those) — avoids the conflict.
+- rtl_airband must be built with `-DSOAPYSDR=ON` (current Dockerfile only has
+  `-DNFM=ON`); device type `soapysdr`, device_string using the remote args above.
+- Do the rtl_airband compile in the **Docker image built on Node A**, then
+  `docker save | ssh node-b docker load` over the link — never compile on the
+  throttled Node B, never compile heavy on Node A's host (protect ADS-B).
+
+**Blocked on:** Node B PSU (still `0x50005` under-voltage after PSU swap — likely
+the USB power *cable*; any streaming/decode result is untrustworthy until `0x0`).
+A meaningful ATC audio test also needs an **airband antenna** (the spare is
+978 MHz — wrong band).
+**Status:** dedicated link done + verified (94 Mbit/s); SoapyRemote discovery
+proven; streaming/decode pending power fix.
 
 ### R2 — OpenAIP airspace overlay
 Toggleable Leaflet overlay (CTR/TMA/airways/navaids) for the Lisbon area, served
