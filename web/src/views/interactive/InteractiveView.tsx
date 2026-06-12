@@ -1,4 +1,5 @@
 /** Interactive layout: map + list + detail; responsive ≥360 px (FR-8.5). */
+import { AtcPlayer } from "../../components/AtcPlayer";
 import { Banner } from "../../components/Banner";
 import { AircraftMap, type ReceiverInfo } from "../../components/Map/AircraftMap";
 import { useStore } from "../../state/store";
@@ -14,6 +15,7 @@ export function InteractiveView({ receiver }: { receiver: ReceiverInfo }) {
       <header className="topbar">
         <h1>sdr-telemetry-node</h1>
         <div className="topbar-status">
+          <AtcPlayer />
           {health && (
             <span className="stat">
               {health.adsb.aircraftCount} aircraft · {health.adsb.msgRate.toFixed(0)} msg/s ·

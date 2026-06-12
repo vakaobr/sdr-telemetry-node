@@ -15,12 +15,14 @@ import os
 import signal
 import sys
 import time
+from pathlib import Path
 
 from app.config import ConfigError, load_config
-from app.decoders import real_command_for
+from app.decoders import ATC_CONF_PATH, real_command_for
 from app.fsm import Radio2Fsm
 from app.proc import ProcessModeRunner
 from app.publish import PahoPublisher
+from app.rtl_airband import AirbandConfigError, render_config
 from app.scheduler.blocks import make_blocks
 from app.scheduler.decision import Scheduler
 from app.scheduler.passes import PassPredictor
@@ -34,13 +36,33 @@ TLE_PATH = os.environ.get("TLE_PATH", "/data/tles.txt")
 TICK_S = 1.0
 
 
-def _command_for():
+def _command_for(cfg):
     """Real decoder commands, or the scripted fake when RADIO2_FAKE is set."""
     fake = os.environ.get("RADIO2_FAKE")
     if fake:
         return lambda mode: [sys.executable, fake, mode]
-    cfg = load_config(CONFIG_PATH)
     return real_command_for(cfg.radio2, cfg.radio2.sdr_serial)
+
+
+def _write_atc_config(cfg) -> None:
+    """Generate /run/rtl_airband.conf from config at boot (real mode only)."""
+    if os.environ.get("RADIO2_FAKE") or not cfg.radio2.atc.channels_mhz:
+        return
+    atc = cfg.radio2.atc
+    try:
+        conf = render_config(
+            atc.channels_mhz,
+            serial=cfg.radio2.sdr_serial,
+            icecast_host=atc.icecast_host,
+            icecast_port=atc.icecast_port,
+            icecast_password=os.environ.get("ICECAST_SOURCE_PASSWORD", "hackme"),
+            gain=atc.gain,
+            primary_mount=atc.icecast_mount,
+        )
+        Path(ATC_CONF_PATH).write_text(conf)
+        log.info("wrote rtl_airband config (%d channels)", len(atc.channels_mhz))
+    except AirbandConfigError as e:
+        log.error("ATC config invalid — ATC mode will fault: %s", e)
 
 
 async def run() -> None:
@@ -78,7 +100,8 @@ async def run() -> None:
         make_blocks([(b.mode, b.from_, b.to) for b in cfg.radio2.schedule]),
         cfg.timezone,
     )
-    runner = ProcessModeRunner(_command_for(), clock=time.monotonic)
+    _write_atc_config(cfg)
+    runner = ProcessModeRunner(_command_for(cfg), clock=time.monotonic)
     fsm = Radio2Fsm(runner, clock=time.monotonic)
     publisher = PahoPublisher(cfg.nodes.mqtt_host, cfg.nodes.mqtt_port)
     sup = Supervisor(cfg, fsm, scheduler, publisher, clock=time.time, tle_age_days=tle.age_days())

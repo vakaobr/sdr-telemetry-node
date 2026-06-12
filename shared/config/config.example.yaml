@@ -32,8 +32,12 @@ radio2:
     apt: { enabled: true }
     lrpt: { enabled: false }         # experimental on 1 GB nodes (ADR-006)
   atc:
-    channels_mhz: [118.1, 121.5]
-    icecast_url: "http://nodeb.local:8000/atc"
+    channels_mhz: [118.1, 119.1, 120.35]   # within one ~2.3 MHz tuner window
+    icecast_url: "http://nodeb.local:8000/atc"   # browser pull URL
+    icecast_host: "icecast"                # rtl_airband push target (compose-internal)
+    icecast_port: 8000
+    icecast_mount: "atc"
+    gain: 28.0
 
 enrichment:
   online:

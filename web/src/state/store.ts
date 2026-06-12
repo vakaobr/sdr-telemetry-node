@@ -31,6 +31,8 @@ export interface AppState {
   latestPass: PassSummary | null;
   alerts: InterestingAlert[]; // newest first, capped
   selectedIcao: string | null;
+  atcActive: boolean; // squelch-open pulse (FR-5.3)
+  atcActiveTs: number;
 
   setConnected: (c: boolean) => void;
   applyServer: (msg: ServerMessage) => void;
@@ -49,6 +51,8 @@ export const useStore = create<AppState>((set) => ({
   latestPass: null,
   alerts: [],
   selectedIcao: null,
+  atcActive: false,
+  atcActiveTs: 0,
 
   setConnected: (c) => set({ connected: c }),
   select: (icao) => set({ selectedIcao: icao }),
@@ -105,7 +109,7 @@ export const useStore = create<AppState>((set) => ({
           };
         }
         case "atc_activity":
-          return { lastMessageTs: msg.ts }; // P8 wires the activity pulse
+          return { lastMessageTs: msg.ts, atcActive: msg.active, atcActiveTs: msg.ts };
         default:
           return {};
       }

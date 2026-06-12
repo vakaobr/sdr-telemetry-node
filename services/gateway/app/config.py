@@ -72,6 +72,10 @@ class Satellite(_StrictModel):
 class Atc(_StrictModel):
     channels_mhz: list[float] = Field(default_factory=list)
     icecast_url: str | None = None
+    icecast_host: str = "icecast"  # radio2-side push target (accepted here so shared
+    icecast_port: int = 8000  # config.yaml validates; gateway only reads icecast_url)
+    icecast_mount: str = "atc"
+    gain: float = 28.0
 
     @field_validator("channels_mhz")
     @classmethod

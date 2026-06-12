@@ -1,13 +1,30 @@
 # Node B (tattoine-watcher-beacon, Pi 3B): shared-radio workhorse.
-# radio2 supervisor (SDR #2 orchestration) [+ Icecast for ATC audio in P8].
+# radio2 supervisor (SDR #2 orchestration) + Icecast (ATC audio, P8).
 #
-# ⚠️ Requires the Node B PSU swap first (under-voltage 0x50005 — see baseline.md).
-# Decoder modes land per milestone: ATC=P8, AIS=P9, satellite=P10. Until then
-# RADIO2_FAKE can exercise the supervisor with the scripted fake decoder.
+# ⚠️ Requires the Node B PSU swap first (under-voltage 0x50005 — see baseline.md)
+# AND the SDR #2 dongle (stx:0:28) relocated from Node A.
+# Decoder modes: ATC=P8 (live), AIS=P9, satellite=P10.
+# Set RADIO2_FAKE to exercise the supervisor with the scripted fake decoder.
 
 name: sdr-telemetry-node-b
 
 services:
+  icecast:
+    build:
+      context: ../..
+      dockerfile: docker/icecast/Dockerfile
+    image: sdr-telemetry-node/icecast:dev
+    container_name: icecast
+    restart: unless-stopped
+    ports:
+      - "8000:8000"                    # browser pulls ATC audio here
+    environment:
+      - ICECAST_SOURCE_PASSWORD=${ICECAST_SOURCE_PASSWORD:?set in .env}
+      - ICECAST_ADMIN_PASSWORD=${ICECAST_ADMIN_PASSWORD:-admin}
+    mem_limit: 48m
+    security_opt:
+      - no-new-privileges:true
+
   radio2:
     build:
       context: ../..
@@ -15,6 +32,8 @@ services:
     image: sdr-telemetry-node/radio2:dev
     container_name: radio2
     restart: unless-stopped
+    depends_on:
+      - icecast
     device_cgroup_rules:
       - "c 189:* rwm"                  # USB (libusb) — SDR #2
     volumes:
@@ -24,12 +43,13 @@ services:
     environment:
       - CONFIG_PATH=/config/config.yaml
       - TLE_PATH=/data/tles.txt
+      - ICECAST_SOURCE_PASSWORD=${ICECAST_SOURCE_PASSWORD:?set in .env}
       - TZ=${TZ:-Europe/Lisbon}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # - RADIO2_FAKE=/opt/fake_decoder.py   # uncomment to dry-run without RF
     mem_limit: 256m
     security_opt:
       - no-new-privileges:true
-    # icecast joins here in P8 (ATC audio)
 
 volumes:
   radio2-data:

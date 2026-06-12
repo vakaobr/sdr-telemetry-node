@@ -45,7 +45,11 @@ class Satellite(_Strict):
 
 class Atc(_Strict):
     channels_mhz: list[float] = Field(default_factory=list)
-    icecast_url: str | None = None
+    icecast_url: str | None = None  # browser pull URL (via the gateway)
+    icecast_host: str = "icecast"  # rtl_airband push target (compose-internal)
+    icecast_port: int = Field(default=8000, ge=1, le=65535)
+    icecast_mount: str = "atc"
+    gain: float = 28.0
 
 
 class Radio2Config(_Strict):
