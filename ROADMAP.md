@@ -48,7 +48,12 @@ audible ATC, independent of software.
 **Status:** dedicated link done + verified (94 Mbit/s); SoapyRemote discovery
 proven; streaming/decode pending power fix.
 
-### R2 — OpenAIP airspace overlay — ✅ CODED (deploy pending power-on)
+### R2 — OpenAIP airspace overlay — ✅ DONE (deployed + verified live 2026-06-12)
+Verified on Node A: real OpenAIP tiles fetch through the gateway (z8/z10 Lisbon
+→ 200 PNG, cached); OpenAIP accepts the `?apiKey=` query param (we send header +
+query); config flag flips true; key stays server-side. (Empty tiles 404 → render
+transparent, expected.)
+
 Toggleable Leaflet overlay (CTR/TMA/airways/navaids), served through the gateway
 tile proxy with the API key server-side (key in the Pi `.env`), region-cached
 into `/tiles/openaip/` for offline use.
