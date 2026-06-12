@@ -80,6 +80,7 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - /opt/sdr-telemetry-node/config.yaml:/config/config.yaml:ro
+      - /opt/sdr-telemetry-node/web/dist:/web/dist:ro   # UI updates = rsync, no rebuild
       - gateway-data:/data
     mem_limit: 256m
     security_opt:

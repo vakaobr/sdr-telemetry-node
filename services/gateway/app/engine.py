@@ -35,6 +35,7 @@ class Engine:
         bridge: MqttBridge,
         hub: Hub,
     ) -> None:
+        self.config = config
         self._cfg = config
         self._readsb = readsb
         self._bridge = bridge

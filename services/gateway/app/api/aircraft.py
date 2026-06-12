@@ -33,4 +33,13 @@ def make_api_router(engine: Engine) -> APIRouter:
     async def system() -> dict:
         return engine.system_health().model_dump(mode="json")
 
+    @r.get("/config")
+    async def config() -> dict:
+        """Client-safe config subset: receiver location + UI hints (no secrets)."""
+        cfg = engine.config
+        return {
+            "receiver": {"lat": cfg.receiver.lat, "lon": cfg.receiver.lon},
+            "ui": {"rangeRingsKm": [50, 100, 150], "tvRotation": cfg.ui.tv_rotation},
+        }
+
     return r

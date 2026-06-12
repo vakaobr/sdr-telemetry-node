@@ -13,7 +13,8 @@
   - Phase 2 (Node A radio stack): ✓ Complete — live ADS-B decode on tattoine-watcher (mosquitto+ultrafeeder), restart-safe (reboot test passed), health on bus, baseline recorded. 24 h passive soak running.
   - Node B (192.168.31.71, "tattoine-watcher-beacon"): base-provisioned early (docker/blacklist/udev/health→NodeA broker). ⚠️ UNDER-VOLTAGE (0x50005) — replace PSU before Phase 8.
   - Phase 3 (gateway core): ✓ Complete — ingest→state→priority→WS/REST live on Node A. 43 tests (incl. TR-1 latency probe), lint clean. Hardware-verified: 1 Hz delta cadence (median 1.01 s), topic filter live, both-node health via MQTT bridge, RAM caps enforced (gw 45 MB / readsb 56 MB / mosq 4 MB).
-  - Phase 4 (web foundation): ⏳ next
+  - Phase 4 (web foundation): ✓ Complete — live dashboard at http://192.168.31.218:8080. WS client (reconnect-backoff, tested w/ fake sockets), zustand store (snapshot-authoritative), Leaflet canvas map (rotated icons/trails/rings, imperative sync), responsive list/detail, dark theme, tile cache (fetch-once→offline), SPA volume-mounted (UI deploys = rsync, no rebuild). 11 web tests; 54 total. **= M1 exit** (48 h soak running passively).
+  - Phase 5 (enrichment + rules + sightings): ⏳ next
   - DEVIATION: readsb+tar1090 ship as ONE container (sdr-enthusiasts ultrafeeder) — community-standard packaging, fewer moving parts on 1 GB; noted in compose header.
 - [ ] Review - Not started
 - [ ] Security - Not started

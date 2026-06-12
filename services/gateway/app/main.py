@@ -15,6 +15,8 @@ from fastapi import FastAPI
 
 from app.api.aircraft import make_api_router
 from app.api.errors import install_error_handlers
+from app.api.static import mount_web
+from app.api.tiles import make_tiles_router
 from app.bus.mqtt import MqttBridge
 from app.config import Config, load_config
 from app.engine import Engine
@@ -59,6 +61,8 @@ def create_app(
     install_error_handlers(app)
     app.include_router(make_api_router(engine))
     app.include_router(make_ws_router(engine))
+    app.include_router(make_tiles_router())
+    mount_web(app)
 
     @app.get("/healthz")
     async def healthz() -> dict[str, bool | str]:

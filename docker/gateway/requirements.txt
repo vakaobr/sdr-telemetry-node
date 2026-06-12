@@ -1,0 +1,9 @@
+# Runtime deps mirror services/gateway/pyproject.toml [project.dependencies].
+# Kept separate so the pip layer caches across app-code changes (Pi builds).
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.9
+PyYAML>=6.0
+httpx>=0.27
+paho-mqtt>=2.1
+aiosqlite>=0.20
