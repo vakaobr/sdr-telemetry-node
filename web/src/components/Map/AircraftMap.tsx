@@ -10,6 +10,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useStore } from "../../state/store";
 import type { Aircraft } from "../../types/generated/ws";
+import { iconHtml, sizeForZoom } from "./icons";
 import "./map.css";
 
 export interface ReceiverInfo {
@@ -18,16 +19,12 @@ export interface ReceiverInfo {
   rangeRingsKm: number[];
 }
 
-function aircraftIcon(ac: Aircraft, selected: boolean): L.DivIcon {
-  // ✈ glyph points NE; -45° baseline makes rotate(track) heading-correct.
-  // Baked into the inline transform (TV browsers may lack the `rotate` property).
-  const rot = (ac.track ?? 0) - 45;
-  const cls = `ac-icon${selected ? " ac-selected" : ""}${ac.flags.length ? " ac-flagged" : ""}`;
+function aircraftIcon(ac: Aircraft, selected: boolean, sizePx: number): L.DivIcon {
   return L.divIcon({
     className: "",
-    html: `<div class="${cls}" style="transform: rotate(${rot}deg)">✈</div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    html: iconHtml(ac, { sizePx, selected }),
+    iconSize: [sizePx, sizePx],
+    iconAnchor: [sizePx / 2, sizePx / 2],
   });
 }
 
@@ -72,6 +69,7 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
     const sync = () => {
       const map = mapRef.current;
       if (!map) return;
+      const sizePx = sizeForZoom(map.getZoom());
       const { aircraft, selectedIcao, select } = useStore.getState();
 
       // selection changed → pan to the aircraft (tar1090-style)
@@ -99,13 +97,13 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
         const selected = ac.icao === selectedIcao;
         let m = markers.get(ac.icao);
         if (!m) {
-          m = L.marker(pos, { icon: aircraftIcon(ac, selected), keyboard: false });
+          m = L.marker(pos, { icon: aircraftIcon(ac, selected, sizePx), keyboard: false });
           m.on("click", () => select(ac.icao));
           m.addTo(map);
           markers.set(ac.icao, m);
         } else {
           m.setLatLng(pos);
-          m.setIcon(aircraftIcon(ac, selected));
+          m.setIcon(aircraftIcon(ac, selected, sizePx));
         }
         const trailPts = ac.trail as unknown as [number, number][];
         let t = trails.get(ac.icao);
@@ -120,7 +118,12 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
     };
     sync();
     const unsub = useStore.subscribe(sync);
-    return () => unsub();
+    // re-render icons at the new size when the zoom level settles
+    mapRef.current?.on("zoomend", sync);
+    return () => {
+      mapRef.current?.off("zoomend", sync);
+      unsub();
+    };
   }, []);
 
   return <div ref={containerRef} className="map-container" data-testid="aircraft-map" />;
