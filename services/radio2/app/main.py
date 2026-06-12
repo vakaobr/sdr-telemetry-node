@@ -58,6 +58,7 @@ def _write_atc_config(cfg) -> None:
             icecast_password=os.environ.get("ICECAST_SOURCE_PASSWORD", "hackme"),
             gain=atc.gain,
             primary_mount=atc.icecast_mount,
+            remote_url=cfg.radio2.sdr_remote,
         )
         Path(ATC_CONF_PATH).write_text(conf)
         log.info("wrote rtl_airband config (%d channels)", len(atc.channels_mhz))

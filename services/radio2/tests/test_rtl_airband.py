@@ -45,6 +45,25 @@ def test_span_at_limit_accepted():
     render_config([118.1, 118.1 + span_mhz - 0.01], serial="s", icecast_host="icecast")
 
 
+def test_local_rtlsdr_device_by_default():
+    conf = render_config([118.1], serial="stx:0:28", icecast_host="icecast")
+    assert 'type = "rtlsdr"' in conf
+    assert 'serial = "stx:0:28"' in conf
+    assert "device_string" not in conf
+
+
+def test_remote_soapy_device_when_url_set():
+    conf = render_config(
+        [118.1],
+        serial="stx:0:28",
+        icecast_host="icecast",
+        remote_url="tcp://10.55.0.1:55132",
+    )
+    assert 'type = "soapysdr"' in conf
+    assert "driver=remote,remote=tcp://10.55.0.1:55132,driver=rtlsdr,serial=stx:0:28" in conf
+    assert 'type = "rtlsdr"' not in conf  # not the local form
+
+
 def test_icecast_credentials_embedded():
     conf = render_config(
         [121.5], serial="s", icecast_host="ice", icecast_port=8123, icecast_password="sekret"

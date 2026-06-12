@@ -56,7 +56,10 @@ class Radio2Config(_Strict):
     schedule: list[ScheduleBlock] = Field(default_factory=list)
     satellite: Satellite = Satellite()
     atc: Atc = Atc()
-    sdr_serial: str = "stx:0:28"  # SDR #2 (the shared radio on Node B)
+    sdr_serial: str = "stx:0:28"  # SDR #2 serial
+    # when set (e.g. tcp://10.55.0.1:55132), decoders read SDR #2 over SoapyRemote
+    # from Node A instead of a local USB dongle (ADR-009 capture-on-A/decode-on-B)
+    sdr_remote: str | None = None
 
 
 class Nodes(_Strict):

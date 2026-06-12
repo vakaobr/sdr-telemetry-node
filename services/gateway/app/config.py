@@ -87,8 +87,9 @@ class Atc(_StrictModel):
 
 
 class Radio2(_StrictModel):
-    sdr_serial: str = "stx:0:28"  # consumed by the radio2 service; accepted here so the
-    schedule: list[ScheduleBlock] = Field(default_factory=list)  # shared config validates
+    sdr_serial: str = "stx:0:28"  # radio2-service fields; accepted here so the shared
+    sdr_remote: str | None = None  # config.yaml validates (gateway ignores them)
+    schedule: list[ScheduleBlock] = Field(default_factory=list)
     satellite: Satellite = Satellite()
     atc: Atc = Atc()
 
