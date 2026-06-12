@@ -24,3 +24,4 @@ data/media/
 .idea/
 .vscode/
 web/*.tsbuildinfo
+/WhatsApp*
