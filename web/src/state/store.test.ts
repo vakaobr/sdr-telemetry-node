@@ -79,6 +79,36 @@ test("interesting alerts prepend and cap at 20", () => {
   expect(alerts[0].rule).toBe("r24"); // newest first
 });
 
+test("selecting a vessel clears aircraft selection and vice versa", () => {
+  const { select, selectVessel } = useStore.getState();
+  select("aaaaaa");
+  expect(useStore.getState().selectedIcao).toBe("aaaaaa");
+  selectVessel(12345);
+  expect(useStore.getState().selectedMmsi).toBe(12345);
+  expect(useStore.getState().selectedIcao).toBeNull(); // mutually exclusive
+  select("bbbbbb");
+  expect(useStore.getState().selectedMmsi).toBeNull();
+});
+
+test("removing the selected vessel clears its selection", () => {
+  const apply = useStore.getState().applyServer;
+  apply({
+    type: "vessel_delta", ts: 1,
+    updated: [{ mmsi: 999, name: "X", lat: 38, lon: -9, sogKt: null, cogDeg: null, shipType: null, lastSeen: 1 }],
+    removed: [],
+  });
+  useStore.getState().selectVessel(999);
+  apply({ type: "vessel_delta", ts: 2, updated: [], removed: [999] });
+  expect(useStore.getState().selectedMmsi).toBeNull();
+});
+
+test("vessels-visible toggle persists to localStorage", () => {
+  localStorage.removeItem("sdr.vesselsVisible");
+  useStore.getState().setVesselsVisible(false);
+  expect(useStore.getState().vesselsVisible).toBe(false);
+  expect(localStorage.getItem("sdr.vesselsVisible")).toBe("0");
+});
+
 test("airspace overlay toggle persists to localStorage", () => {
   localStorage.removeItem("sdr.airspaceOverlay");
   useStore.getState().setAirspaceOverlay(true);

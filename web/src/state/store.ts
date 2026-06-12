@@ -31,22 +31,27 @@ export interface AppState {
   latestPass: PassSummary | null;
   alerts: InterestingAlert[]; // newest first, capped
   selectedIcao: string | null;
+  selectedMmsi: number | null; // selected vessel (mutually exclusive w/ aircraft)
   atcActive: boolean; // squelch-open pulse (FR-5.3)
   atcActiveTs: number;
   airspaceOverlay: boolean; // OpenAIP overlay toggle (R2), persisted per device
+  vesselsVisible: boolean; // AIS layer toggle, persisted per device
 
   setConnected: (c: boolean) => void;
   applyServer: (msg: ServerMessage) => void;
   select: (icao: string | null) => void;
+  selectVessel: (mmsi: number | null) => void;
   setAirspaceOverlay: (on: boolean) => void;
+  setVesselsVisible: (on: boolean) => void;
 }
 
 const MAX_ALERTS = 20;
 const AIRSPACE_KEY = "sdr.airspaceOverlay";
+const VESSELS_KEY = "sdr.vesselsVisible";
 
-function loadAirspacePref(): boolean {
+function loadBoolPref(key: string): boolean {
   try {
-    const v = localStorage.getItem(AIRSPACE_KEY);
+    const v = localStorage.getItem(key);
     return v === null ? true : v === "1"; // on by default; respects explicit toggle-off
   } catch {
     return true;
@@ -63,12 +68,23 @@ export const useStore = create<AppState>((set) => ({
   latestPass: null,
   alerts: [],
   selectedIcao: null,
+  selectedMmsi: null,
   atcActive: false,
   atcActiveTs: 0,
-  airspaceOverlay: loadAirspacePref(),
+  airspaceOverlay: loadBoolPref(AIRSPACE_KEY),
+  vesselsVisible: loadBoolPref(VESSELS_KEY),
 
   setConnected: (c) => set({ connected: c }),
-  select: (icao) => set({ selectedIcao: icao }),
+  select: (icao) => set({ selectedIcao: icao, selectedMmsi: null }),
+  selectVessel: (mmsi) => set({ selectedMmsi: mmsi, selectedIcao: null }),
+  setVesselsVisible: (on) => {
+    try {
+      localStorage.setItem(VESSELS_KEY, on ? "1" : "0");
+    } catch {
+      /* no storage */
+    }
+    set({ vesselsVisible: on });
+  },
   setAirspaceOverlay: (on) => {
     try {
       localStorage.setItem(AIRSPACE_KEY, on ? "1" : "0");
@@ -108,7 +124,9 @@ export const useStore = create<AppState>((set) => ({
           const vessels = { ...s.vessels };
           for (const v of msg.updated) vessels[v.mmsi] = v;
           for (const mmsi of msg.removed) delete vessels[mmsi];
-          return { lastMessageTs: msg.ts, vessels };
+          const selectedMmsi =
+            s.selectedMmsi && !vessels[s.selectedMmsi] ? null : s.selectedMmsi;
+          return { lastMessageTs: msg.ts, vessels, selectedMmsi };
         }
         case "radio2_status":
           return { lastMessageTs: msg.ts, radio2: msg.status };

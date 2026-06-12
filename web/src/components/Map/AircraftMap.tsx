@@ -13,12 +13,12 @@ import type { Aircraft, Vessel } from "../../types/generated/ws";
 import { iconHtml, sizeForZoom } from "./icons";
 import "./map.css";
 
-function vesselIcon(v: Vessel): L.DivIcon {
+function vesselIcon(v: Vessel, selected: boolean): L.DivIcon {
   // teal chevron pointing along course-over-ground; distinct from aircraft
   const rot = v.cogDeg ?? 0;
   return L.divIcon({
     className: "",
-    html: `<div class="vessel-icon" style="transform: rotate(${rot}deg)">▲</div>`,
+    html: `<div class="vessel-icon${selected ? " vessel-selected" : ""}" style="transform: rotate(${rot}deg)">▲</div>`,
     iconSize: [18, 18],
     iconAnchor: [9, 9],
   });
@@ -86,6 +86,7 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
   // aircraft sync — subscribe to store outside React's render cycle
   useEffect(() => {
     let lastSelected: string | null = null;
+    let lastSelectedMmsi: number | null = null;
     const sync = () => {
       const map = mapRef.current;
       if (!map) return;
@@ -136,26 +137,39 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
         }
       }
 
-      // vessels (AIS) — distinct teal ship markers, separate from aircraft
-      const vessels = useStore.getState().vessels;
+      // vessels (AIS) — distinct teal ship markers; clickable, toggleable layer
+      const { vessels, vesselsVisible, selectedMmsi, selectVessel } = useStore.getState();
+      if (selectedMmsi && selectedMmsi !== lastSelectedMmsi) {
+        const sv = vessels[selectedMmsi];
+        if (sv) map.panTo([sv.lat, sv.lon], { animate: true });
+      }
+      lastSelectedMmsi = selectedMmsi;
       const vmarkers = vesselsRef.current;
       for (const [mmsi, marker] of vmarkers) {
-        if (!vessels[mmsi]) {
+        if (!vesselsVisible || !vessels[mmsi]) {
           marker.remove();
           vmarkers.delete(mmsi);
         }
       }
-      for (const v of Object.values(vessels)) {
-        const pos: L.LatLngExpression = [v.lat, v.lon];
-        let m = vmarkers.get(v.mmsi);
-        if (!m) {
-          m = L.marker(pos, { icon: vesselIcon(v), keyboard: false, zIndexOffset: -1000 });
-          m.bindTooltip(v.name ?? String(v.mmsi), { direction: "top" });
-          m.addTo(map);
-          vmarkers.set(v.mmsi, m);
-        } else {
-          m.setLatLng(pos);
-          m.setIcon(vesselIcon(v));
+      if (vesselsVisible) {
+        for (const v of Object.values(vessels)) {
+          const pos: L.LatLngExpression = [v.lat, v.lon];
+          const selected = v.mmsi === selectedMmsi;
+          let m = vmarkers.get(v.mmsi);
+          if (!m) {
+            m = L.marker(pos, {
+              icon: vesselIcon(v, selected),
+              keyboard: false,
+              zIndexOffset: -1000,
+            });
+            m.bindTooltip(v.name ?? String(v.mmsi), { direction: "top" });
+            m.on("click", () => selectVessel(v.mmsi));
+            m.addTo(map);
+            vmarkers.set(v.mmsi, m);
+          } else {
+            m.setLatLng(pos);
+            m.setIcon(vesselIcon(v, selected));
+          }
         }
       }
     };

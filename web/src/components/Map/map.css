@@ -25,7 +25,12 @@
   text-align: center;
   color: #2dd4bf;
   text-shadow: 0 0 3px #000;
-  cursor: default;
+  cursor: pointer;
+}
+.vessel-selected {
+  color: #5eead4;
+  font-size: 20px;
+  filter: drop-shadow(0 0 6px #2dd4bf);
 }
 
 /* dark map: dim ONLY the base raster tiles (scoped via the layer className), so
