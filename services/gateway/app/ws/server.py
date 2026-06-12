@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -10,14 +11,13 @@ from app.engine import Engine
 
 log = logging.getLogger("gateway.ws")
 
-router = APIRouter()
 
-
-def make_ws_router(engine: Engine) -> APIRouter:
+def make_ws_router(get_engine: Callable[[], Engine]) -> APIRouter:
     r = APIRouter()
 
     @r.websocket("/ws")
     async def ws_endpoint(ws: WebSocket) -> None:
+        engine = get_engine()
         await ws.accept()
         await engine.hub.join(ws)
         try:

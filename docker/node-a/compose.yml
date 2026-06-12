@@ -81,6 +81,7 @@ services:
     volumes:
       - /opt/sdr-telemetry-node/config.yaml:/config/config.yaml:ro
       - /opt/sdr-telemetry-node/web/dist:/web/dist:ro   # UI updates = rsync, no rebuild
+      - /opt/sdr-telemetry-node/data/aircraft.csv.gz:/data/aircraft.csv.gz:ro
       - gateway-data:/data
     mem_limit: 256m
     security_opt:

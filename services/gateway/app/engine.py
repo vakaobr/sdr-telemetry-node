@@ -1,10 +1,13 @@
-"""Gateway engine: the 1 Hz heartbeat tying ingest → state → WS fan-out.
+"""Gateway engine: the 1 Hz heartbeat tying ingest → state → rules → WS fan-out.
 
 One asyncio task owns the whole cycle (deterministic, testable via tick()):
   1. poll readsb aircraft.json
-  2. diff into AircraftTable → aircraft_delta broadcast
-  3. drain MQTT bridge events → typed WS messages
-  4. periodic system_health broadcast
+  2. diff into AircraftTable (rules flags computed in-diff) → aircraft_delta
+  3. fire interesting events for newly-hit rules (WS + MQTT)
+  4. schedule async enrichment for new aircraft; results land on later ticks
+  5. feed the sightings recorder (batched persistence, ADR-005)
+  6. drain MQTT bridge events → typed WS messages
+  7. periodic system_health broadcast
 """
 
 from __future__ import annotations
@@ -16,9 +19,12 @@ import time
 from typing import Any
 
 from app.bus.mqtt import MqttBridge
-from app.config import Config
+from app.config import Config, WatchlistEntry
+from app.enrich.service import Enricher
 from app.ingest.readsb import ReadsbClient
 from app.models.generated_ws import AdsbHealth, SystemHealth
+from app.persist.sightings import SightingsRecorder
+from app.rules import interesting as rules
 from app.state.aircraft import AircraftTable
 from app.ws.hub import Hub
 
@@ -34,14 +40,22 @@ class Engine:
         readsb: ReadsbClient,
         bridge: MqttBridge,
         hub: Hub,
+        enricher: Enricher | None = None,
+        recorder: SightingsRecorder | None = None,
     ) -> None:
         self.config = config
         self._cfg = config
         self._readsb = readsb
         self._bridge = bridge
         self.hub = hub
-        self.table = AircraftTable(config)
+        self._enricher = enricher
+        self._recorder = recorder
+        self.watchlist: list[WatchlistEntry] = list(config.watchlist)
+        self.table = AircraftTable(config, flags_fn=self._compute_flags)
 
+        self._pending_enrich: set[str] = set()
+        self._enriched_callsign: dict[str, str | None] = {}  # callsign used at last enrich
+        self._fired_rules: dict[str, set[str]] = {}  # icao → rule ids already alerted
         self._last_msg_count: int | None = None
         self._last_msg_ts: float | None = None
         self.msg_rate: float = 0.0
@@ -93,6 +107,17 @@ class Engine:
                         "removed": removed,
                     }
                 )
+            await self._fire_rule_events(updated, now)
+            self._schedule_enrichment(updated)
+            if self._recorder:
+                for ac in updated:
+                    self._recorder.observe(ac.model_dump(mode="json"))
+                await self._recorder.on_removed(removed)
+                await self._recorder.maybe_flush()
+            for icao in removed:
+                self._fired_rules.pop(icao, None)
+                self._pending_enrich.discard(icao)
+                self._enriched_callsign.pop(icao, None)
 
         await self._drain_bus_events(now)
 
@@ -106,6 +131,83 @@ class Engine:
                 }
             )
 
+    # -- rules ------------------------------------------------------------------
+
+    def _compute_flags(self, payload: dict[str, Any]) -> list[str]:
+        """Synchronous hook called by the table pre-diff (same-tick banners)."""
+        enrich = payload.get("enrich") or {}
+        military = False
+        if self._enricher is not None:
+            military = self._enricher.military_flag_of.get(payload["icao"], False)
+        flags, _ = rules.evaluate(
+            icao=payload["icao"],
+            callsign=payload.get("callsign"),
+            squawk=payload.get("squawk"),
+            registration=enrich.get("registration"),
+            type_code=enrich.get("typeCode"),
+            military=military,
+            watchlist=self.watchlist,
+        )
+        return flags
+
+    async def _fire_rule_events(self, updated: list, now: int) -> None:
+        for ac in updated:
+            enrich_model = ac.enrich
+            military = False
+            if self._enricher is not None:
+                military = self._enricher.military_flag_of.get(ac.icao, False)
+            _, hits = rules.evaluate(
+                icao=ac.icao,
+                callsign=ac.callsign,
+                squawk=ac.squawk,
+                registration=enrich_model.registration if enrich_model else None,
+                type_code=enrich_model.typeCode if enrich_model else None,
+                military=military,
+                watchlist=self.watchlist,
+            )
+            fired = self._fired_rules.setdefault(ac.icao, set())
+            for hit in hits:
+                if hit.rule in fired:
+                    continue
+                fired.add(hit.rule)
+                event = {
+                    "ts": now,
+                    "icao": ac.icao,
+                    "severity": hit.severity,
+                    "rule": hit.rule,
+                    "callsign": ac.callsign,
+                }
+                await self.hub.broadcast({"type": "interesting", **event})
+                self._bridge.publish("adsb/interesting", event)  # external consumers
+                log.info("interesting: %s %s (%s)", hit.severity, ac.icao, hit.rule)
+
+    # -- enrichment ----------------------------------------------------------------
+
+    def _schedule_enrichment(self, updated: list) -> None:
+        if self._enricher is None:
+            return
+        for ac in updated:
+            if ac.icao in self._pending_enrich:
+                continue
+            if ac.enrich is None:
+                pass  # first sight → enrich now (callsign may still be unknown)
+            elif ac.callsign and self._enriched_callsign.get(ac.icao) != ac.callsign:
+                pass  # callsign arrived/changed after first enrichment → redo once
+            else:
+                continue
+            self._pending_enrich.add(ac.icao)
+            asyncio.create_task(self._enrich_one(ac.icao, ac.callsign))
+
+    async def _enrich_one(self, icao: str, callsign: str | None) -> None:
+        try:
+            result = await self._enricher.enrich(icao, callsign)
+            self.table.set_enrichment(icao, result)  # emitted next cycle
+            self._enriched_callsign[icao] = callsign
+        except Exception:  # enrichment must never hurt tracking
+            log.exception("enrichment failed for %s", icao)
+        finally:
+            self._pending_enrich.discard(icao)
+
     # -- bus event → WS message mapping ---------------------------------------
 
     async def _drain_bus_events(self, now: int) -> None:
@@ -114,7 +216,7 @@ class Engine:
             ev = self._bridge.events.get_nowait()
             topic, payload = ev["topic"], ev["payload"]
             if topic.startswith("radio2/") or (topic.startswith("sys/") and "health" in topic):
-                radio2_dirty = True  # status/health snapshot shape rebuilt below
+                radio2_dirty = True
             elif topic == "atc/activity":
                 await self.hub.broadcast(
                     {
@@ -124,17 +226,7 @@ class Engine:
                         "active": payload.get("active"),
                     }
                 )
-            elif topic == "adsb/interesting":
-                await self.hub.broadcast(
-                    {
-                        "type": "interesting",
-                        "ts": payload.get("ts", now),
-                        "icao": payload.get("icao"),
-                        "severity": payload.get("severity"),
-                        "rule": payload.get("rule"),
-                        "callsign": payload.get("callsign"),
-                    }
-                )
+            # adsb/interesting: we are its publisher — bus echo is NOT re-broadcast
             # ais/vessel → P9, satellite/pass/event → P10
 
         if radio2_dirty:
@@ -187,7 +279,7 @@ class Engine:
                 ),  # gateway runs ON node-a: if we're answering, the node is up
                 "nodeB": (h.model_dump() if (h := self._bridge.node_health("node-b")) else None),
                 "adsb": self.adsb_health().model_dump(),
-                "dbOk": True,  # persistence arrives in P5
+                "dbOk": True,
             }
         )
 

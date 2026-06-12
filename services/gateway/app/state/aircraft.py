@@ -12,6 +12,7 @@ validate on attribute assignment, so mutate-in-place would bypass the contract.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -19,6 +20,9 @@ from app.config import Config
 from app.models.generated_ws import Aircraft
 from app.state import geo
 from app.state.priority import LOW_ALT_FT, LOW_ALT_WEIGHT
+
+# synchronous hook: wire payload → flags list (rules engine plugs in here)
+FlagsFn = Callable[[dict[str, Any]], list[str]]
 
 
 @dataclass
@@ -41,8 +45,9 @@ def _score(p: dict[str, Any]) -> float:
 class AircraftTable:
     """Holds live aircraft; produces deltas. Not thread-safe — single asyncio owner."""
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, flags_fn: FlagsFn | None = None) -> None:
         self._cfg = config
+        self._flags_fn = flags_fn
         self._tracked: dict[str, _Tracked] = {}
 
     # -- public ---------------------------------------------------------------
@@ -56,6 +61,16 @@ class AircraftTable:
     def get(self, icao: str) -> Aircraft | None:
         t = self._tracked.get(icao.lower())
         return t.model if t else None
+
+    def set_enrichment(self, icao: str, enrich: dict[str, Any] | None) -> None:
+        """Apply an async enrichment result; emitted as a delta on the next cycle."""
+        t = self._tracked.get(icao.lower())
+        if t and t.payload:
+            t.payload["enrich"] = enrich
+
+    def flags_of(self, icao: str) -> list[str]:
+        t = self._tracked.get(icao.lower())
+        return list(t.payload.get("flags", [])) if t and t.payload else []
 
     def update_from_readsb(self, doc: dict, now: int) -> tuple[list[Aircraft], list[str]]:
         """Ingest one aircraft.json document.
@@ -148,4 +163,6 @@ class AircraftTable:
                     del entry.trail[: -cfg.adsb.trail_len]
 
         p["trail"] = [list(pt) for pt in entry.trail]
+        if self._flags_fn is not None:
+            p["flags"] = self._flags_fn(p)  # rules run pre-diff: same-tick banners (B1 AC)
         entry.payload = p

@@ -1,4 +1,5 @@
 /** Interactive layout: map + list + detail; responsive ≥360 px (FR-8.5). */
+import { Banner } from "../../components/Banner";
 import { AircraftMap, type ReceiverInfo } from "../../components/Map/AircraftMap";
 import { useStore } from "../../state/store";
 import { AircraftList } from "./AircraftList";
@@ -25,6 +26,7 @@ export function InteractiveView({ receiver }: { receiver: ReceiverInfo }) {
           />
         </div>
       </header>
+      <Banner />
       <main className="content">
         <section className="map-pane">
           <AircraftMap receiver={receiver} />

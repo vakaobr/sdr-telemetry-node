@@ -55,11 +55,17 @@ def plane(hex="4951ce", lat=38.8, alt=12000):
 
 
 @pytest.fixture()
-def rig():
+def rig(tmp_path):
     cfg = load_config(EXAMPLE)
     fake = FakeReadsb()
     bridge = MqttBridge(cfg)  # never started — no broker in unit CI (offline posture)
-    app = create_app(config=cfg, readsb=fake, bridge=bridge, start_bus=False)
+    app = create_app(
+        config=cfg,
+        readsb=fake,
+        bridge=bridge,
+        start_bus=False,
+        db_path=str(tmp_path / "app.db"),
+    )
     return cfg, fake, bridge, app
 
 

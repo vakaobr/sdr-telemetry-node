@@ -92,6 +92,30 @@ html, body, #root {
 
 .boot-msg { display: grid; place-items: center; height: 100%; color: var(--muted); }
 
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  color: white;
+  text-align: left;
+}
+.banner-critical { background: var(--crit); animation: pulse 1.2s infinite alternate; }
+.banner-notable { background: #92600a; }
+.banner-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+}
+.banner-text { font-variant-numeric: tabular-nums; }
+
 /* mobile ≥360px: stack panes, list under map (TR-3) */
 @media (max-width: 720px) {
   .content { flex-direction: column; }
