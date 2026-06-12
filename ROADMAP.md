@@ -30,17 +30,21 @@ ATC/AIS/satellite decode onto Node B. Gated on the Node B PSU swap.
   `docker save | ssh node-b docker load` over the link — never compile on the
   throttled Node B, never compile heavy on Node A's host (protect ADS-B).
 
-**Antenna (re-verified 2026-06-12):** the 978 MHz spare **does receive airband
-fine** — an off-center IQ capture (center 119.0, dev0) showed real signals at
-118.296 / 119.090 / 119.7 / 119.761 MHz at **30+ dB above noise**, modulation-
-variability ~0.46 (voice, not a carrier). Earlier "continuous beep at 125.0" was
-the **RTL-SDR DC-spike artifact** at rtl_fm's tune point, not a real signal —
-rtl_airband offsets channels from center to avoid it. So the antenna is NOT a
-blocker; ATC audio is viable (strong channels; weak ones marginal). Use channels
-that land off-DC.
+**Antenna — INADEQUATE for airband (verified by ear 2026-06-12):** the 978 MHz
+spare does NOT yield intelligible ATC voice. Empirically, across 121.95/124.15/
+118.1/119.1/120.35/122.877 MHz, demodulated audio was static; the only strong
+FFT peaks (e.g. 122.877 @31 dB) are narrow spurs / unmodulated carriers with no
+recoverable voice. A 978 MHz antenna is ~8× off-resonance at 122 MHz — it catches
+spurs but can't pull AM voice from the noise. (Earlier "125.0 beep" = RTL-SDR
+DC-spike; earlier "30 dB signals" = a transient/spurs, not reproducible.)
+**Action: get an airband antenna** — a ~60 cm ¼-wave wire (300/125/4) on the
+dongle center pin, or a cheap airband/scanner antenna. This is a hard blocker for
+audible ATC, independent of software.
 
-**Blocked on:** Node B PSU only (still `0x50005` under-voltage after PSU swap —
-likely the USB power *cable*; streaming/decode results untrustworthy until `0x0`).
+**Blocked on (both hardware):**
+1. **Airband antenna** (978 MHz won't recover voice — see above).
+2. **Node B PSU** (still `0x50005` after PSU swap — likely the USB power *cable*;
+   decode results untrustworthy until `0x0`).
 **Status:** dedicated link done + verified (94 Mbit/s); SoapyRemote discovery
 proven; streaming/decode pending power fix.
 
