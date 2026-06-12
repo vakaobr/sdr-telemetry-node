@@ -1,24 +1,25 @@
 # Node B Bring-Up Runbook (M3 — ATC audio)
 
-Node B (`tattoine-watcher-beacon`, 192.168.31.71) is base-provisioned (Docker,
-DVB blacklist, udev, health publisher → Node A broker). This is the remaining
-hardware bring-up to get ATC audio on air.
+> **⚠️ TOPOLOGY CHANGED — see ADR-009.** Both dongles now stay on **Node A**
+> (the enclosure can't take the dongle move). Node A captures and serves SDR #2
+> over the **dedicated Ethernet link** (`10.55.0.1` ↔ `10.55.0.2`, already up:
+> 94 Mbit/s); Node B *decodes* via SoapyRemote. So **there is no dongle move and
+> no antenna on Node B** — the antennas stay on Node A. The SoapyRemote
+> capture/decode wiring is roadmap **R1** (not yet implemented); the steps below
+> are updated for that model and the dongle-move steps are struck.
 
-## ⚠️ Prerequisites (hardware — do these first)
+Node B (`tattoine-watcher-beacon`, 192.168.31.71) is base-provisioned (Docker,
+DVB blacklist, udev, health publisher → Node A broker) and on the dedicated link.
+
+## ⚠️ Prerequisites (hardware)
 
 1. **Swap the PSU.** Node B reports `vcgencmd get_throttled = 0x50005`
-   (under-voltage active) *at idle*. Adding an SDR (~300 mA) will make it worse
-   → silent decode death (R-2). Fit a genuine **5 V / 2.5 A+** supply and
-   confirm `vcgencmd get_throttled` reads `0x0` before continuing.
-2. **Move the SDR-2 dongle.** Unplug Stratux dongle **`stx:0:28`** from Node A
-   and plug it into Node B. (Node A keeps `stx:0:29` for ADS-B.) Verify:
-   ```bash
-   ssh root@192.168.31.71 'lsusb | grep 0bda:2838'   # expect 1 dongle
-   ssh root@192.168.31.218 'lsusb | grep 0bda:2838'  # expect 1 (stx:0:29)
-   ```
-3. **Antenna.** Connect a 118–137 MHz airband antenna to the Node B dongle
-   (MCX connector — pigtail may be needed). A simple quarter-wave or the stock
-   telescopic tuned to ~125 MHz works to start.
+   (under-voltage) *at idle*. Decode is CPU-heavy; under-voltage throttling will
+   cripple it. Fit a genuine **5 V / 2.5 A+** supply; confirm `0x0` before use.
+2. ~~Move the SDR-2 dongle to Node B~~ — **superseded by ADR-009**: the dongle
+   stays on Node A; samples reach Node B over the dedicated link.
+3. ~~Antenna on Node B~~ — antennas stay on Node A.
+4. **Dedicated link** (`10.55.0.x`) — already established and persistent.
 
 ## 1. Configure ATC channels + secrets
 
