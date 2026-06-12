@@ -31,6 +31,7 @@ export function App() {
             lon: cfg.receiver.lon,
             rangeRingsKm: cfg.ui?.rangeRingsKm ?? [50, 100, 150],
             tvRotation: cfg.ui?.tvRotation,
+            airspaceAvailable: cfg.ui?.airspaceOverlay ?? false,
           });
         }
       })

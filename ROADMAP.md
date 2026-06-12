@@ -48,10 +48,19 @@ audible ATC, independent of software.
 **Status:** dedicated link done + verified (94 Mbit/s); SoapyRemote discovery
 proven; streaming/decode pending power fix.
 
-### R2 — OpenAIP airspace overlay
-Toggleable Leaflet overlay (CTR/TMA/airways/navaids) for the Lisbon area, served
-through the gateway tile proxy with the API key server-side (key already in the
-Pi `.env`). Region-cached into the existing `/tiles` store for offline use.
+### R2 — OpenAIP airspace overlay — ✅ CODED (deploy pending power-on)
+Toggleable Leaflet overlay (CTR/TMA/airways/navaids), served through the gateway
+tile proxy with the API key server-side (key in the Pi `.env`), region-cached
+into `/tiles/openaip/` for offline use.
+- gateway: `/tiles/openaip/{z}/{x}/{y}.png` proxy (key via header+query, fetch-
+  once-cache-forever); `/api/v1/config` exposes only an `airspaceOverlay` bool
+  (key never reaches the browser); compose passes `OPENAIP_API_KEY`
+- web: persisted toggle (localStorage) + Leaflet overlay layer (opacity 0.85,
+  tile pane so it's above base map / below aircraft); toggle shown only if keyed
+- tests: tile proxy cache/key/offline (gateway), toggle persistence (web)
+- **Deploy pending:** rebuild gateway + redeploy bundle when Pis power on.
+  **Verify at deploy:** confirm OpenAIP's current auth (header `x-openaip-api-key`
+  vs `?apiKey=` query — we send both) and tile URL against a live request.
 
 ### R3 — Single-node profile (Pi 4 / Pi 5 / other adopters)
 Make a one-host deployment first-class so newer hardware (or other users) can run

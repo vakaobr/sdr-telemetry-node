@@ -33,13 +33,24 @@ export interface AppState {
   selectedIcao: string | null;
   atcActive: boolean; // squelch-open pulse (FR-5.3)
   atcActiveTs: number;
+  airspaceOverlay: boolean; // OpenAIP overlay toggle (R2), persisted per device
 
   setConnected: (c: boolean) => void;
   applyServer: (msg: ServerMessage) => void;
   select: (icao: string | null) => void;
+  setAirspaceOverlay: (on: boolean) => void;
 }
 
 const MAX_ALERTS = 20;
+const AIRSPACE_KEY = "sdr.airspaceOverlay";
+
+function loadAirspacePref(): boolean {
+  try {
+    return localStorage.getItem(AIRSPACE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export const useStore = create<AppState>((set) => ({
   connected: false,
@@ -53,9 +64,18 @@ export const useStore = create<AppState>((set) => ({
   selectedIcao: null,
   atcActive: false,
   atcActiveTs: 0,
+  airspaceOverlay: loadAirspacePref(),
 
   setConnected: (c) => set({ connected: c }),
   select: (icao) => set({ selectedIcao: icao }),
+  setAirspaceOverlay: (on) => {
+    try {
+      localStorage.setItem(AIRSPACE_KEY, on ? "1" : "0");
+    } catch {
+      /* private mode / no storage — keep in memory only */
+    }
+    set({ airspaceOverlay: on });
+  },
 
   applyServer: (msg) =>
     set((s) => {

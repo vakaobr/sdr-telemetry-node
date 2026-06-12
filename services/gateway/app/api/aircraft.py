@@ -57,10 +57,16 @@ def make_api_router(get_engine: Callable[[], Engine]) -> APIRouter:
     @r.get("/config")
     async def config() -> dict:
         """Client-safe config subset: receiver location + UI hints (no secrets)."""
+        from app.api.tiles import openaip_key
+
         cfg = get_engine().config
         return {
             "receiver": {"lat": cfg.receiver.lat, "lon": cfg.receiver.lon},
-            "ui": {"rangeRingsKm": [50, 100, 150], "tvRotation": cfg.ui.tv_rotation},
+            "ui": {
+                "rangeRingsKm": [50, 100, 150],
+                "tvRotation": cfg.ui.tv_rotation,
+                "airspaceOverlay": openaip_key() is not None,  # show toggle only if keyed
+            },
         }
 
     @r.get("/config/watchlist")

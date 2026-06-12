@@ -18,6 +18,7 @@ export interface ReceiverInfo {
   lon: number;
   rangeRingsKm: number[];
   tvRotation?: string[];
+  airspaceAvailable?: boolean; // gateway has an OpenAIP key (R2)
 }
 
 function aircraftIcon(ac: Aircraft, selected: boolean, sizePx: number): L.DivIcon {
@@ -34,6 +35,8 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const trailsRef = useRef<Map<string, L.Polyline>>(new Map());
+  const airspaceRef = useRef<L.TileLayer | null>(null);
+  const airspaceOn = useStore((s) => s.airspaceOverlay);
 
   // map bootstrap — once
   useEffect(() => {
@@ -126,6 +129,24 @@ export function AircraftMap({ receiver }: { receiver: ReceiverInfo }) {
       unsub();
     };
   }, []);
+
+  // OpenAIP airspace overlay (R2) — add/remove on toggle; gateway-proxied so the
+  // API key stays server-side, region-cached so it works offline after first view
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (airspaceOn && !airspaceRef.current) {
+      airspaceRef.current = L.tileLayer("/tiles/openaip/{z}/{x}/{y}.png", {
+        maxZoom: 14,
+        opacity: 0.85,
+        // sits in the tile pane: above the base map, below aircraft markers
+      });
+      airspaceRef.current.addTo(map);
+    } else if (!airspaceOn && airspaceRef.current) {
+      airspaceRef.current.remove();
+      airspaceRef.current = null;
+    }
+  }, [airspaceOn]);
 
   return <div ref={containerRef} className="map-container" data-testid="aircraft-map" />;
 }

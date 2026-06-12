@@ -1,5 +1,6 @@
 /** Interactive layout: map + list + detail; responsive ≥360 px (FR-8.5). */
 import { AtcPlayer } from "../../components/AtcPlayer";
+import { AirspaceToggle } from "../../components/AirspaceToggle";
 import { Banner } from "../../components/Banner";
 import { AircraftMap, type ReceiverInfo } from "../../components/Map/AircraftMap";
 import { useStore } from "../../state/store";
@@ -15,6 +16,7 @@ export function InteractiveView({ receiver }: { receiver: ReceiverInfo }) {
       <header className="topbar">
         <h1>sdr-telemetry-node</h1>
         <div className="topbar-status">
+          {receiver.airspaceAvailable && <AirspaceToggle />}
           <AtcPlayer />
           {health && (
             <span className="stat">

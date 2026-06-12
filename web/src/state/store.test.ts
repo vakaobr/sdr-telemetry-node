@@ -79,6 +79,15 @@ test("interesting alerts prepend and cap at 20", () => {
   expect(alerts[0].rule).toBe("r24"); // newest first
 });
 
+test("airspace overlay toggle persists to localStorage", () => {
+  localStorage.removeItem("sdr.airspaceOverlay");
+  useStore.getState().setAirspaceOverlay(true);
+  expect(useStore.getState().airspaceOverlay).toBe(true);
+  expect(localStorage.getItem("sdr.airspaceOverlay")).toBe("1");
+  useStore.getState().setAirspaceOverlay(false);
+  expect(localStorage.getItem("sdr.airspaceOverlay")).toBe("0");
+});
+
 test("sortedAircraft orders by priority", () => {
   const list = sortedAircraft({
     bbbbbb: plane("bbbbbb", 2),
