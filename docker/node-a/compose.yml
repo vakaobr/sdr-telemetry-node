@@ -1,0 +1,67 @@
+# Node A — tattoine-watcher (Pi 3B): always-on core
+# mosquitto (bus) + ultrafeeder (readsb+tar1090) [+ gateway joins in Phase 3]
+#
+# DOCUMENTED DEVIATION from 03_ARCHITECTURE §2: readsb and tar1090 ship as ONE
+# container (sdr-enthusiasts/adsb-ultrafeeder) instead of two. Ultrafeeder IS
+# readsb+tar1090 packaged by the de-facto community standard — one fewer
+# container on a 1 GB node, same components, same interfaces
+# (aircraft.json + Beast :30005 + tar1090 web). Bounded context unchanged.
+
+name: sdr-telemetry-node-a
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ../mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+    mem_limit: 64m
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/broker/uptime", "-C", "1", "-W", "3"]
+      interval: 30s
+      timeout: 5s
+
+  readsb:
+    # readsb + tar1090 combined (see deviation note above)
+    image: ghcr.io/sdr-enthusiasts/docker-adsb-ultrafeeder:latest
+    container_name: readsb
+    restart: unless-stopped
+    device_cgroup_rules:
+      - "c 189:* rwm"                  # USB devices (libusb)
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb:ro
+    ports:
+      - "8078:80"                      # tar1090 expert map + /data/aircraft.json
+      - "30005:30005"                  # Beast output (future consumers)
+    environment:
+      - TZ=${TZ:-Europe/Lisbon}
+      - READSB_DEVICE_TYPE=rtlsdr
+      - READSB_RTLSDR_DEVICE=${ADSB_DONGLE_SERIAL:-stx:0:29}
+      - READSB_GAIN=${ADSB_GAIN:-auto}
+      - READSB_LAT=${RECEIVER_LAT:?set in .env}
+      - READSB_LON=${RECEIVER_LON:?set in .env}
+      - READSB_ALT=${RECEIVER_ALT_M:-45}m
+      - READSB_RX_LOCATION_ACCURACY=2
+      - READSB_STATS_RANGE=true
+      - UPDATE_TAR1090_DATA_INTERVAL=1
+      # no external feeds configured — local-only by design
+    tmpfs:
+      - /run:exec,size=64M
+      - /var/log:size=16M
+    mem_limit: 192m
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/data/aircraft.json"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+
+volumes:
+  mosquitto-data:

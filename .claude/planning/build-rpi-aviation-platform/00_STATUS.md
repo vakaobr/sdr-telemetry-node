@@ -8,9 +8,12 @@
 - [x] Research - Completed (ecosystem + architecture-feasibility)
 - [x] Design - Completed (03_ARCHITECTURE + 8 ADRs + 03_PROJECT_SPEC)
 - [x] Planning - Completed (04_IMPLEMENTATION_PLAN: 12 phases → M0–M5)
-- [~] Implementation - In Progress (Phase 1/12)
-  - Phase 1 (scaffold/schemas/CI): ✓ Complete — 23 Python tests + 1 web test green, lint clean, codegen drift-free
-  - Phase 2 (Node A radio stack): ⏳ next — SSH access confirmed (192.168.31.218, key auth)
+- [~] Implementation - In Progress (Phase 2/12)
+  - Phase 1 (scaffold/schemas/CI): ✓ Complete — 23 Python tests + 1 web test green, lint clean, codegen drift-free (a5eb989)
+  - Phase 2 (Node A radio stack): ✓ Complete — live ADS-B decode on tattoine-watcher (mosquitto+ultrafeeder), restart-safe (reboot test passed), health on bus, baseline recorded. 24 h passive soak running.
+  - Node B (192.168.31.71, "tattoine-watcher-beacon"): base-provisioned early (docker/blacklist/udev/health→NodeA broker). ⚠️ UNDER-VOLTAGE (0x50005) — replace PSU before Phase 8.
+  - Phase 3 (gateway core): ⏳ next
+  - DEVIATION: readsb+tar1090 ship as ONE container (sdr-enthusiasts ultrafeeder) — community-standard packaging, fewer moving parts on 1 GB; noted in compose header.
 - [ ] Review - Not started
 - [ ] Security - Not started
 - [ ] Deploy - Not started
