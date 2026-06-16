@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Node provisioning for sdr-telemetry-node (Raspberry Pi OS Bookworm, ARM64).
-# Usage: sudo ./install-node.sh --role node-a|node-b [--uninstall]
+# Usage: sudo ./install-node.sh --role node-a|node-b|single [--uninstall]
+#   single = both stacks on one host (Pi 4/5 or other adopters; ADR-009 / R3)
 # Idempotent: safe to re-run.
 set -euo pipefail
 
@@ -13,7 +14,7 @@ while [[ $# -gt 0 ]]; do
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
-[[ "$ROLE" == "node-a" || "$ROLE" == "node-b" ]] || { echo "need --role node-a|node-b" >&2; exit 2; }
+case "$ROLE" in node-a|node-b|single) ;; *) echo "need --role node-a|node-b|single" >&2; exit 2 ;; esac
 [[ $EUID -eq 0 ]] || { echo "run with sudo" >&2; exit 2; }
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -80,5 +81,11 @@ systemctl daemon-reload
 systemctl enable --now sdr-node-health.timer
 
 echo "==> install complete (role=$ROLE)."
-echo "    next: cd $REPO_DIR/docker/$ROLE && docker compose up -d"
+if [[ "$ROLE" == "single" ]]; then
+  echo "    next: $REPO_DIR/scripts/up-single.sh   (runs all services on this host)"
+  echo "    config.yaml: nodes.mqtt_host=mosquitto, radio2.sdr_remote=null (local SDRs),"
+  echo "                 radio2.atc.icecast_host=icecast"
+else
+  echo "    next: cd $REPO_DIR/docker/$ROLE && docker compose up -d"
+fi
 echo "    note: re-login (or 'newgrp docker') for non-root docker access."

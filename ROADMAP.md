@@ -67,17 +67,19 @@ into `/tiles/openaip/` for offline use.
   **Verify at deploy:** confirm OpenAIP's current auth (header `x-openaip-api-key`
   vs `?apiKey=` query — we send both) and tile URL against a live request.
 
-### R3 — Single-node profile (Pi 4 / Pi 5 / other adopters)
-Make a one-host deployment first-class so newer hardware (or other users) can run
-everything on one Pi:
-- `install-node.sh --role single` running both compose stacks (merged
-  `compose.single.yml` or `-f node-a -f node-b`)
-- MQTT host + Icecast URL → localhost (already config-driven)
-- **Re-enable the resource mitigations the two-node split made moot**: cgroup CPU
-  caps + core-pinning on the satellite container, and satdump record-then-decode
-  at `nice 19` — so SatDump can't starve ADS-B on one host (R-1)
-- All SDRs local (Pi 4/5 USB-3 + separate controller makes dual-dongle a non-issue)
-**Sequencing:** after R1 (the user's stated order).
+### R3 — Single-node profile (Pi 4 / Pi 5 / other adopters) — ✅ DONE (compose-validated)
+One-host deployment is now first-class:
+- `install-node.sh --role single` provisions one host
+- `scripts/up-single.sh` merges node-a + node-b + `docker/single/compose.override.yml`
+  into one project/network (`sdrnode`) — services resolve by name, both SDRs local,
+  no SoapyRemote
+- **CPU pinning re-instates the R-1 mitigation** the split made moot: readsb +
+  gateway on cores 0,1; radio2 (heavy satdump) confined to 2,3 — ADS-B can't be
+  starved (satdump also record-then-decode at low priority, ADR-006)
+- config: `nodes.mqtt_host=mosquitto`, `radio2.sdr_remote=null`, `atc.icecast_host=icecast`
+- runbook: `scripts/single-node.md`
+- Validated via `docker compose config` (merge parses, pinning applied). Not
+  deployed — no Pi 4/5 on hand; turnkey for adopters / a future upgrade.
 
 ## Backlog
 - Multi-channel ATC selector in the UI (currently single primary mount)

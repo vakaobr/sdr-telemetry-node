@@ -1,0 +1,18 @@
+# Single-node override (R3, ADR-009): run BOTH stacks on one host (Pi 4/5 or
+# other adopters). Applied on top of node-a + node-b composes via up-single.sh,
+# merging all services into one project + network so they resolve each other by
+# name (radio2→mosquitto, gateway→readsb, rtl_airband→icecast) — no SoapyRemote,
+# both SDRs local.
+#
+# CPU pinning re-instates the R-1 mitigation the two-node split made moot: the
+# always-on ADS-B path (readsb) gets dedicated cores; the heavy SDR-2 decode
+# (satdump) is confined away from it so it can't starve tracking. Assumes a
+# 4-core Pi (3B/4/5).
+services:
+  readsb:
+    cpuset: "0,1"   # ADS-B — reserved cores, never starved
+  gateway:
+    cpuset: "0,1"   # light; shares with ADS-B
+  radio2:
+    cpuset: "2,3"   # heavy decode (satdump) confined here
+  # mosquitto + icecast are tiny — left unpinned
