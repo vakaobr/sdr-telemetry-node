@@ -31,7 +31,7 @@ def _device_block(serial: str, gain: float, center_mhz: float, remote_url: str |
     common = (
         f"  gain = {gain};\n"
         f"  centerfreq = {center_mhz:.4f};\n"
-        f"  sample_rate = {SAMPLE_RATE_HZ // 1000};"
+        f"  sample_rate = {SAMPLE_RATE_HZ};"  # rtl_airband v5 expects Hz (min 16000), not kHz
     )
     if remote_url:
         dev = f"driver=remote,remote={remote_url},driver=rtlsdr,serial={serial}"

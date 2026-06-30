@@ -153,5 +153,6 @@ class Radio2Fsm:
     async def _fault(self, reason: str) -> None:
         self._retries += 1
         self.reason = reason
+        log.warning("mode %s fault: %s (retry %d)", self.mode, reason, self._retries)
         await self._runner.stop()  # ensure the child is on its way out
         self._enter(State.FAULTED)

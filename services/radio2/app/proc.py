@@ -43,10 +43,18 @@ class ChildProcess:
 
     async def _read(self) -> None:
         assert self._proc and self._proc.stdout
+        # Heartbeat = time since the last stdout *output*, read in chunks rather
+        # than whole lines. rtl_airband's foreground (-f) display redraws in place
+        # with ANSI cursor codes and no trailing newline, so a line-based reader
+        # would see it as hung after startup and the watchdog would kill a healthy
+        # decoder. Any bytes (a redraw, a log line) refresh the heartbeat.
         try:
-            async for _line in self._proc.stdout:
+            while True:
+                chunk = await self._proc.stdout.read(4096)
+                if not chunk:
+                    break
                 self._last_line = self._clock()
-                self._lines += 1
+                self._lines += chunk.count(b"\n")
         finally:
             await self._proc.wait()  # reap → returncode set → alive() goes False
 

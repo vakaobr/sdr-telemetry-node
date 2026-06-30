@@ -5,48 +5,56 @@ Post-v1 enhancements, ordered. Core build phases live in
 
 ## Near-term (after Node B is on air)
 
-### R1 — Revised Node B bring-up: SoapyRemote capture-on-A / decode-on-B (ADR-009)
-Both dongles stay on Node A; Node A runs SoapySDRServer for SDR #2; Node B
-decoders open the remote device over the dedicated `10.55.0.x` link. Offloads
-ATC/AIS/satellite decode onto Node B. Gated on the Node B PSU swap.
+### R1 — ATC audio — ✅ DONE (deployed + verified live 2026-06-30)
+**ADR-009 reversed: ATC decode runs on Node A directly, not Node B/SoapyRemote.**
+The two-node split existed to offload heavy satellite + AIS + ATC decode onto
+Node B. That rationale is gone — AIS is an internet feed (AISStream, ADR-010),
+satellite is deferred, so SDR #2's only job is one light ATC decode, and the
+dongle + airband antenna are physically on Node A. Running `rtl_airband` on Node A
+is simplest and lowest-latency; it avoids SoapyRemote and Node B's throttling
+risk. Node B is now a spare (ready for satellite later, when that antenna exists).
 
-**Proven (2026-06-12 live spike):**
-- Debian trixie packages: Node A `soapysdr-tools soapysdr-module-rtlsdr
-  soapyremote-server`; Node B `soapysdr-tools soapysdr-module-remote`.
-- `SoapySDRServer --bind=0.0.0.0:55132` on Node A serves SDR #2 **without
-  disturbing readsb** (readsb keeps `stx:0:29`; server enumerates only on demand).
-- Node B discovers the remote dongles over the link:
-  `SoapySDRUtil --find="remote=tcp://10.55.0.1:55132"` → sees `stx:0:28` + `:29`.
-  Open args: `dict(driver="remote", remote="tcp://10.55.0.1:55132", serial="stx:0:28")`.
+**Pipeline (live-verified on Node A):** radio2 supervisor → rtl_airband (local
+`type=rtlsdr`, serial `stx:0:28`) → Icecast `/atc` mount → gateway publishes
+`mode=atc` + `audioUrl` → browser AtcPlayer. Channels **119.1 / 118.1 / 118.95**
+(LPPT Approach/Tower/Clearance) on one 2.56 MHz tuner; 119.1 first = primary mount.
+radio2 stable, 0 faults; `/atc` streams continuously (MP3 8 kHz mono).
 
-**Gotchas found:**
-- A bare host SoapySDR install loads all 12 device modules; opening a Device
-  crashed with `Hash collision!!! Fatal error!!` (UHD/audio module conflict).
-  **Fix:** the radio2 image ships ONLY `remote` + `rtlsdr` modules (set
-  `SOAPY_SDR_PLUGIN_PATH` to a dir with just those) — avoids the conflict.
-- rtl_airband must be built with `-DSOAPYSDR=ON` (current Dockerfile only has
-  `-DNFM=ON`); device type `soapysdr`, device_string using the remote args above.
-- Do the rtl_airband compile in the **Docker image built on Node A**, then
-  `docker save | ssh node-b docker load` over the link — never compile on the
-  throttled Node B, never compile heavy on Node A's host (protect ADS-B).
+**Deploy mechanics:** radio2 + icecast images cross-built on an Apple-Silicon Mac
+(`docker buildx --platform linux/arm64`), shipped to Node A and `docker load`ed,
+then run in the **node-a** compose project (`-f node-a -f node-b up -d icecast
+radio2`) so they share the network (radio2→mosquitto, rtl_airband→icecast). Config
+in `config.yaml`: `radio2.sdr_remote=null`, all-day `atc` schedule block, and
+`satellite.min_elevation_deg=90` so no predicted pass can preempt ATC. Added
+`ICECAST_SOURCE_PASSWORD` to `docker/node-a/.env`; disabled the host
+`soapyremote-server` unit (it auto-grabbed the dongle on boot).
 
-**Antenna — INADEQUATE for airband (verified by ear 2026-06-12):** the 978 MHz
-spare does NOT yield intelligible ATC voice. Empirically, across 121.95/124.15/
-118.1/119.1/120.35/122.877 MHz, demodulated audio was static; the only strong
-FFT peaks (e.g. 122.877 @31 dB) are narrow spurs / unmodulated carriers with no
-recoverable voice. A 978 MHz antenna is ~8× off-resonance at 122 MHz — it catches
-spurs but can't pull AM voice from the noise. (Earlier "125.0 beep" = RTL-SDR
-DC-spike; earlier "30 dB signals" = a transient/spurs, not reproducible.)
-**Action: get an airband antenna** — a ~60 cm ¼-wave wire (300/125/4) on the
-dongle center pin, or a cheap airband/scanner antenna. This is a hard blocker for
-audible ATC, independent of software.
+**Bugs fixed during bring-up (this commit):**
+- `rtl_airband.py`: `sample_rate` was written in kHz; v5 wants **Hz** (min 16000).
+- `proc.py`: heartbeat read whole lines, but rtl_airband's `-f` display redraws
+  with ANSI codes and **no newlines** → watchdog killed a healthy decoder. Now
+  reads in chunks (any bytes = heartbeat).
+- `decoders.py`: rtl_airband **block-buffers stdout when piped** → no heartbeat
+  reached the supervisor. Wrapped in `stdbuf -o0 -e0`.
+- `Dockerfile`: `-DPLATFORM=native` cross-built on the Mac baked in Apple-Silicon
+  instructions → **SIGILL** on the Pi 3B Cortex-A53. Changed to `PLATFORM=generic`
+  (portable aarch64). `-DSOAPYSDR=ON` retained (kept for a future Node B path).
+- `fsm.py`: log the specific fault reason (made the above diagnosable).
 
-**Blocked on (both hardware):**
-1. **Airband antenna** (978 MHz won't recover voice — see above).
-2. **Node B PSU** (still `0x50005` after PSU swap — likely the USB power *cable*;
-   decode results untrustworthy until `0x0`).
-**Status:** dedicated link done + verified (94 Mbit/s); SoapyRemote discovery
-proven; streaming/decode pending power fix.
+**Antenna:** the 978 MHz spare was inadequate (verified by ear 2026-06-12). The
+replacement **108–136 MHz airband antenna works** — real ATC voice confirmed by
+ear on Approach 119.1 (2026-06-30), though SNR is modest (an airband bandpass
+filter/LNA would help, since strong 150–300 MHz signals desensitize the unfiltered
+front end). The Stratux LowPowerV2 dongles have **no airband-blocking SAW filter**
+(wideband sweep: most sensitive 100–400 MHz, least at 1090) — they decode airband fine.
+
+**⚠️ Remaining: connectivity, not software.** Node A's good-RF spot (balcony) is at
+the edge of WiFi range (−69 to −81 dBm, drops out); the in-WiFi-range indoor spot
+is RF-dead (ADS-B 0 msg/s, airband silent). To actually *use* ATC audio + the
+dashboard, Node A needs one location with **both** — a WiFi extender/mesh near the
+balcony, a windowsill with both, or the antenna on coax with the Pi indoors. The
+dedicated A↔B Ethernet link (`10.55.0.x`) is a reliable out-of-band path to manage
+Node A when its WiFi is down (jump via Node B, or `ssh root@10.55.0.1`).
 
 ### R2 — OpenAIP airspace overlay — ✅ DONE (deployed + verified live 2026-06-12)
 Verified on Node A: real OpenAIP tiles fetch through the gateway (z8/z10 Lisbon

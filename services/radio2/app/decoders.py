@@ -21,8 +21,12 @@ def real_command_for(cfg: Radio2Config, serial: str) -> Callable[[str], list[str
     def command_for(mode: str) -> list[str]:
         if mode == "atc":
             # -f foreground (stdout heartbeat), -e errors→stderr; config written
-            # at boot by main from cfg.radio2.atc (see rtl_airband.render_config)
-            return ["rtl_airband", "-f", "-e", "-c", ATC_CONF_PATH]
+            # at boot by main from cfg.radio2.atc (see rtl_airband.render_config).
+            # stdbuf -o0: rtl_airband block-buffers stdout when it's a pipe (not a
+            # TTY), so its live display never reaches the heartbeat reader until
+            # exit → the watchdog kills a healthy decoder. Unbuffer so the redraw
+            # stream keeps the heartbeat fresh.
+            return ["stdbuf", "-o0", "-e0", "rtl_airband", "-f", "-e", "-c", ATC_CONF_PATH]
         if mode == "ais":
             return ["AIS-catcher", "-d", serial, "-N", "8100", "-v"]
         if mode == "satellite":

@@ -11,8 +11,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN git clone --depth 1 --branch v5.0.1 \
       https://github.com/charlie-foxtrot/RTLSDR-Airband.git /src
 WORKDIR /src/build
-# SOAPYSDR=ON enables the remote SDR source (capture-on-A / decode-on-B, ADR-009)
-RUN cmake -DPLATFORM=native -DNFM=ON -DSOAPYSDR=ON .. && make -j"$(nproc)" && make install
+# SOAPYSDR=ON enables the remote SDR source (capture-on-A / decode-on-B, ADR-009).
+# PLATFORM=generic (NOT native): the image is often cross-built on a faster arm64
+# host (e.g. an Apple-Silicon Mac) but runs on a Pi 3B Cortex-A53. -march=native
+# would bake in instructions the A53 lacks → SIGILL at runtime. v5 'generic' adds no
+# hardware flags → a portable aarch64 binary safe on A53/A72/A76 (Pi 3/4/5).
+RUN cmake -DPLATFORM=generic -DNFM=ON -DSOAPYSDR=ON .. && make -j"$(nproc)" && make install
 # → /usr/local/bin/rtl_airband
 
 # -- python deps --------------------------------------------------------------
@@ -32,7 +36,7 @@ FROM python:3.12-slim
 # SOAPY_SDR_PLUGIN_PATH is belt-and-suspenders.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       tini tzdata \
-      librtlsdr0 libmp3lame0 libshout3 libconfig++9v5 libfftw3-single3 libusb-1.0-0 \
+      librtlsdr0 libmp3lame0 libshout3 libconfig++11 libfftw3-single3 libusb-1.0-0 \
       libsoapysdr0.8 soapysdr-module-rtlsdr soapysdr-module-remote \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -r -u 10002 radio2 \
