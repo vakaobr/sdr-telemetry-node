@@ -89,8 +89,49 @@ One-host deployment is now first-class:
 - Validated via `docker compose config` (merge parses, pinning applied). Not
   deployed — no Pi 4/5 on hand; turnkey for adopters / a future upgrade.
 
-## Backlog
-- Multi-channel ATC selector in the UI (currently single primary mount)
-- squelch → `atc/activity` event source from rtl_airband (UI pulse already wired)
-- METEOR LRPT enablement once validated on the target hardware (ADR-006)
-- Feeder hooks (FlightAware/FR24/ADSBx) — explicitly out of v1 scope
+## Not yet implemented
+
+Outstanding work, grouped by theme. Nothing here blocks the core ADS-B + ATC
+build (R1/R2/R3 done); these are the next things to pick up.
+
+### Hardware / deployment (needed to actually *use* the system)
+- **Connectivity fix for the balcony.** The good-RF spot is at the edge of WiFi
+  range (Node A drops off-LAN), and the in-WiFi indoor spot is RF-dead. Options:
+  a WiFi extender/mesh node near the balcony, reposition to a windowsill with
+  both, or run the antenna on coax with the Pi indoors. Until one is in place the
+  dashboard/ATC audio are only reachable when Node A happens to be on WiFi.
+- **Airband bandpass filter or LNA** to lift ATC SNR (strong 150 to 300 MHz
+  signals desensitize the unfiltered RTL-SDR front end). Optional, improves voice
+  clarity; not required for R1.
+- **Deploy + soak on real hardware for R3** (single-node Pi 4/5). Validated only
+  via `docker compose config`; never run on a physical Pi 4/5.
+
+### Satellite (deferred feature, ADR-006 / ADR-010)
+- **APT weather-image reception** (SatDump, NOAA 137 MHz). Needs a dedicated
+  137 MHz antenna, which does not exist yet. radio2 has the scheduler/pass-
+  prediction plumbing; the decoder command is still a placeholder.
+- **METEOR LRPT enablement** once validated on the target hardware.
+- Node B is now a spare and is the intended home for this when the antenna exists.
+
+### ATC enhancements
+- **Multi-channel selector in the UI.** rtl_airband already streams per-channel
+  Icecast mounts (`atc_118100`, `atc_118950`, `atc_119100`); the UI plays only the
+  primary `atc` mount. Expose a channel picker.
+- **Ground (121.75) and other channels outside the 2.56 MHz tuner window.** Would
+  need a second tuner or a scanning mode.
+- **`atc/activity` squelch event source** from rtl_airband, so the UI activity
+  pulse reflects real transmissions (the UI wiring already exists).
+
+### AIS
+- **Local AIS radio** as an alternative to the AISStream internet feed (needs a
+  marine-band antenna). Currently internet-only by design (ADR-010).
+
+### Platform / ops
+- **CI on GitHub** (the codegen drift check and tests run locally; wire them into
+  Actions).
+- **Automatic out-of-band management** over the A-to-B Ethernet link (currently a
+  manual ProxyJump / `ssh root@10.55.0.1` when Node A's WiFi is down).
+
+### Explicitly out of v1 scope
+- Feeder hooks (FlightAware / FR24 / ADSBx).
+- Public exposure / TLS / auth (local-first, LAN-trusted by design).
