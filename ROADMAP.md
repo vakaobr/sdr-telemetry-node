@@ -100,9 +100,23 @@ build (R1/R2/R3 done); these are the next things to pick up.
   a WiFi extender/mesh node near the balcony, reposition to a windowsill with
   both, or run the antenna on coax with the Pi indoors. Until one is in place the
   dashboard/ATC audio are only reachable when Node A happens to be on WiFi.
-- **Airband bandpass filter or LNA** to lift ATC SNR (strong 150 to 300 MHz
-  signals desensitize the unfiltered RTL-SDR front end). Optional, improves voice
-  clarity; not required for R1.
+- **Better ATC RF chain (in impact order).** The dongle is NOT the bottleneck (a
+  wideband sweep proved the Stratux LowPowerV2 has no airband-blocking filter and
+  it decodes 118 to 137 MHz fine), so spend here in this order:
+  1. **Antenna placement / height / line-of-sight** (free, biggest effect).
+  2. **Airband (118 to 137 MHz) bandpass filter** (roughly 10 to 20 EUR). Targets
+     the measured problem directly: strong 150 to 300 MHz signals (~+17 dB in the
+     sweep) desensitize the unfiltered RTL-SDR front end and raise the airband
+     noise floor.
+  3. **Inline LNA at the antenna** (useful with longer coax; can be bias-tee
+     powered).
+  4. **Dedicated general-purpose SDR (rtl-sdr.com Blog V4).** Nice-to-have, not
+     the ATC fix on its own: 1 PPM TCXO, better dynamic range, a bias-tee to power
+     the LNA, and a proper SDR #2 so we stop borrowing the ADS-B spare. Also the
+     right radio for the future 137 MHz satellite work on Node B.
+  Suggested buy if spending: rtl-sdr.com V4 + their airband bandpass filter (+
+  optional bias-tee LNA), paired with fixing placement. None of this is required
+  for R1; it improves voice clarity.
 - **Deploy + soak on real hardware for R3** (single-node Pi 4/5). Validated only
   via `docker compose config`; never run on a physical Pi 4/5.
 
