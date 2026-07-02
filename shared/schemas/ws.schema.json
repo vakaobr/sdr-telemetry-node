@@ -1,0 +1,299 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sdr-telemetry-node/schemas/ws.schema.json",
+  "title": "WsMessages",
+  "description": "WebSocket protocol between gateway and browser clients. Source of truth: 03_PROJECT_SPEC §3.1.",
+  "oneOf": [
+    { "$ref": "#/definitions/ServerMessage" },
+    { "$ref": "#/definitions/ClientMessage" }
+  ],
+  "definitions": {
+    "Aircraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["icao", "priority", "flags", "trail", "lastSeen"],
+      "properties": {
+        "icao": { "type": "string", "pattern": "^[0-9a-f]{6}$" },
+        "callsign": { "type": ["string", "null"] },
+        "lat": { "type": ["number", "null"], "minimum": -90, "maximum": 90 },
+        "lon": { "type": ["number", "null"], "minimum": -180, "maximum": 180 },
+        "altFt": { "type": ["integer", "null"] },
+        "gsKt": { "type": ["number", "null"] },
+        "vrFpm": { "type": ["number", "null"] },
+        "track": { "type": ["number", "null"], "minimum": 0, "exclusiveMaximum": 360 },
+        "squawk": { "type": ["string", "null"], "pattern": "^[0-7]{4}$" },
+        "distanceKm": { "type": ["number", "null"], "minimum": 0 },
+        "bearingDeg": { "type": ["number", "null"], "minimum": 0, "exclusiveMaximum": 360 },
+        "priority": { "type": "integer", "minimum": 0 },
+        "flags": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["military", "emergency", "watchlist"] }
+        },
+        "enrich": {
+          "anyOf": [{ "$ref": "#/definitions/Enrichment" }, { "type": "null" }]
+        },
+        "trail": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": { "type": "number" }
+          }
+        },
+        "lastSeen": { "type": "integer", "description": "unix seconds" },
+        "rssi": { "type": ["number", "null"] }
+      }
+    },
+    "Enrichment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "registration": { "type": ["string", "null"] },
+        "typeCode": { "type": ["string", "null"] },
+        "typeName": { "type": ["string", "null"] },
+        "operator": { "type": ["string", "null"] },
+        "country": { "type": ["string", "null"] },
+        "route": { "type": ["string", "null"] },
+        "photoUrl": { "type": ["string", "null"] }
+      }
+    },
+    "Vessel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mmsi", "lat", "lon", "lastSeen"],
+      "properties": {
+        "mmsi": { "type": "integer" },
+        "name": { "type": ["string", "null"] },
+        "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon": { "type": "number", "minimum": -180, "maximum": 180 },
+        "sogKt": { "type": ["number", "null"] },
+        "cogDeg": { "type": ["number", "null"] },
+        "shipType": { "type": ["integer", "null"] },
+        "lastSeen": { "type": "integer" }
+      }
+    },
+    "Radio2Status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "since", "reason", "nextPass", "audioUrl", "tleAgeDays"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["atc", "ais", "satellite", "idle", "faulted", "offline"]
+        },
+        "since": { "type": "integer" },
+        "reason": {
+          "type": "string",
+          "enum": ["schedule", "preempt", "manual", "fault", "lwt"]
+        },
+        "nextPass": {
+          "anyOf": [{ "$ref": "#/definitions/NextPass" }, { "type": "null" }]
+        },
+        "audioUrl": { "type": ["string", "null"] },
+        "tleAgeDays": { "type": "number", "minimum": 0 }
+      }
+    },
+    "NextPass": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["satellite", "aos", "los", "maxEl"],
+      "properties": {
+        "satellite": { "type": "string" },
+        "aos": { "type": "integer" },
+        "los": { "type": "integer" },
+        "maxEl": { "type": "number", "minimum": 0, "maximum": 90 }
+      }
+    },
+    "PassSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "satellite", "aos", "los", "maxElevation", "status", "imageUrls"],
+      "properties": {
+        "id": { "type": "integer" },
+        "satellite": { "type": "string" },
+        "aos": { "type": "integer" },
+        "los": { "type": "integer" },
+        "maxElevation": { "type": "number" },
+        "status": {
+          "type": "string",
+          "enum": ["scheduled", "captured", "decoded", "failed"]
+        },
+        "imageUrls": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "NodeHealth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "cpuPct", "memMb", "tempC", "throttled", "diskFreePct"],
+      "properties": {
+        "ok": { "type": "boolean" },
+        "cpuPct": { "type": "number", "minimum": 0 },
+        "memMb": { "type": "number", "minimum": 0 },
+        "tempC": { "type": "number" },
+        "throttled": { "type": "boolean" },
+        "diskFreePct": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "AdsbHealth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "msgRate", "aircraftCount", "maxRangeKm"],
+      "properties": {
+        "ok": { "type": "boolean" },
+        "msgRate": { "type": "number", "minimum": 0 },
+        "aircraftCount": { "type": "integer", "minimum": 0 },
+        "maxRangeKm": { "type": "number", "minimum": 0 }
+      }
+    },
+    "SystemHealth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeA", "nodeB", "adsb", "dbOk"],
+      "properties": {
+        "nodeA": { "$ref": "#/definitions/NodeHealth" },
+        "nodeB": {
+          "anyOf": [{ "$ref": "#/definitions/NodeHealth" }, { "type": "null" }],
+          "description": "null = offline (MQTT LWT fired)"
+        },
+        "adsb": { "$ref": "#/definitions/AdsbHealth" },
+        "dbOk": { "type": "boolean" }
+      }
+    },
+    "SnapshotMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ts", "aircraft", "vessels", "radio2", "latestPass", "health"],
+      "properties": {
+        "type": { "const": "snapshot" },
+        "ts": { "type": "integer" },
+        "aircraft": { "type": "array", "items": { "$ref": "#/definitions/Aircraft" } },
+        "vessels": { "type": "array", "items": { "$ref": "#/definitions/Vessel" } },
+        "radio2": { "$ref": "#/definitions/Radio2Status" },
+        "latestPass": {
+          "anyOf": [{ "$ref": "#/definitions/PassSummary" }, { "type": "null" }]
+        },
+        "health": { "$ref": "#/definitions/SystemHealth" }
+      }
+    },
+    "AircraftDeltaMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ts", "updated", "removed"],
+      "properties": {
+        "type": { "const": "aircraft_delta" },
+        "ts": { "type": "integer" },
+        "updated": { "type": "array", "items": { "$ref": "#/definitions/Aircraft" } },
+        "removed": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[0-9a-f]{6}$" }
+        }
+      }
+    },
+    "VesselDeltaMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ts", "updated", "removed"],
+      "properties": {
+        "type": { "const": "vessel_delta" },
+        "ts": { "type": "integer" },
+        "updated": { "type": "array", "items": { "$ref": "#/definitions/Vessel" } },
+        "removed": { "type": "array", "items": { "type": "integer" } }
+      }
+    },
+    "Radio2StatusMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ts", "status"],
+      "properties": {
+        "type": { "const": "radio2_status" },
+        "ts": { "type": "integer" },
+        "status": { "$ref": "#/definitions/Radio2Status" }
+      }
+    },
+    "AtcActivityMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ts", "channelMhz", "active"],
+      "properties": {
+        "type": { "const": "atc_activity" },
+        "ts": { "type": "integer" },
+        "channelMhz": { "type": "number" },
+        "active": { "type": "boolean" }
+      }
+    },
+    "InterestingMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ts", "icao", "severity", "rule", "callsign"],
+      "properties": {
+        "type": { "const": "interesting" },
+        "ts": { "type": "integer" },
+        "icao": { "type": "string", "pattern": "^[0-9a-f]{6}$" },
+        "severity": { "type": "string", "enum": ["critical", "notable"] },
+        "rule": { "type": "string" },
+        "callsign": { "type": ["string", "null"] }
+      }
+    },
+    "PassUpdateMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ts", "pass"],
+      "properties": {
+        "type": { "const": "pass_update" },
+        "ts": { "type": "integer" },
+        "pass": { "$ref": "#/definitions/PassSummary" }
+      }
+    },
+    "SystemHealthMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ts", "health"],
+      "properties": {
+        "type": { "const": "system_health" },
+        "ts": { "type": "integer" },
+        "health": { "$ref": "#/definitions/SystemHealth" }
+      }
+    },
+    "ServerMessage": {
+      "oneOf": [
+        { "$ref": "#/definitions/SnapshotMessage" },
+        { "$ref": "#/definitions/AircraftDeltaMessage" },
+        { "$ref": "#/definitions/VesselDeltaMessage" },
+        { "$ref": "#/definitions/Radio2StatusMessage" },
+        { "$ref": "#/definitions/AtcActivityMessage" },
+        { "$ref": "#/definitions/InterestingMessage" },
+        { "$ref": "#/definitions/PassUpdateMessage" },
+        { "$ref": "#/definitions/SystemHealthMessage" }
+      ]
+    },
+    "SubscribeMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "topics"],
+      "properties": {
+        "type": { "const": "subscribe" },
+        "topics": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["aircraft", "vessels", "radio2", "system"] }
+        }
+      }
+    },
+    "PingMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ts"],
+      "properties": {
+        "type": { "const": "ping" },
+        "ts": { "type": "integer" }
+      }
+    },
+    "ClientMessage": {
+      "oneOf": [
+        { "$ref": "#/definitions/SubscribeMessage" },
+        { "$ref": "#/definitions/PingMessage" }
+      ]
+    }
+  }
+}

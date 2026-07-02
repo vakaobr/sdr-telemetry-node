@@ -1,0 +1,145 @@
+/* Dark-first theme (UX #5). Conservative CSS for TV-class browsers (NFR-9). */
+:root {
+  --bg: #0b0e14;
+  --panel: #11161f;
+  --border: #1e2733;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --accent: #38bdf8;
+  --warn: #f59e0b;
+  --crit: #ef4444;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.interactive-root { display: flex; flex-direction: column; height: 100%; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.topbar h1 { font-size: 1rem; margin: 0; font-weight: 600; letter-spacing: 0.02em; }
+.topbar-status { display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; color: var(--muted); }
+
+.conn-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.conn-ok { background: #34d399; }
+.conn-down { background: var(--crit); animation: pulse 1s infinite alternate; }
+@keyframes pulse { from { opacity: 1; } to { opacity: 0.3; } }
+
+.content { flex: 1; display: flex; min-height: 0; position: relative; }
+.map-pane { flex: 1; min-width: 0; }
+.side-pane {
+  width: 320px;
+  border-left: 1px solid var(--border);
+  background: var(--panel);
+  overflow-y: auto;
+}
+
+.ac-list { list-style: none; margin: 0; padding: 0; }
+.ac-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.ac-row:hover { background: #16202c; }
+.row-selected { background: #0c2d3f; }
+.row-flagged .ac-callsign { color: var(--warn); }
+.ac-callsign { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ac-type { color: var(--muted); }
+.ac-alt, .ac-dist { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.list-empty { padding: 2rem 1rem; color: var(--muted); text-align: center; }
+
+.detail-pane {
+  position: absolute;
+  z-index: 1100; /* above Leaflet panes (≤400) and its controls (1000) */
+  right: 332px;
+  top: 0.75rem;
+  width: 300px;
+  max-height: calc(100% - 1.5rem);
+  overflow-y: auto;
+  background: rgba(17, 22, 31, 0.96);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+.detail-pane header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+.detail-pane h2 { margin: 0; font-size: 1.1rem; }
+.detail-pane button { background: none; border: none; color: var(--muted); font-size: 1.3rem; cursor: pointer; }
+.detail-row { display: flex; justify-content: space-between; padding: 0.2rem 0; font-size: 0.85rem; }
+.detail-label { color: var(--muted); }
+.detail-value { font-variant-numeric: tabular-nums; }
+.detail-flags { margin-top: 0.5rem; display: flex; gap: 0.4rem; }
+.flag { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 999px; text-transform: uppercase; }
+.flag-emergency { background: var(--crit); color: white; }
+.flag-military { background: #475569; color: white; }
+.flag-watchlist { background: var(--accent); color: #082f49; }
+
+.boot-msg { display: grid; place-items: center; height: 100%; color: var(--muted); }
+
+/* ATC audio player (topbar) */
+.atc-player { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; }
+.atc-toggle {
+  background: var(--border); color: var(--text); border: none; border-radius: 4px;
+  width: 26px; height: 26px; cursor: pointer; font-size: 0.8rem;
+}
+.atc-toggle:hover { background: #2a3645; }
+.atc-label { color: var(--text); display: inline-flex; align-items: center; gap: 0.4rem; }
+.atc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+.atc-dot-on { background: #34d399; box-shadow: 0 0 6px #34d399; }
+.atc-error { color: var(--crit); font-size: 0.75rem; }
+
+/* airspace overlay toggle */
+.overlay-toggle {
+  background: var(--border); color: var(--text); border: none; border-radius: 4px;
+  padding: 0.3rem 0.6rem; font-size: 0.8rem; line-height: 1.4; cursor: pointer;
+}
+.overlay-toggle:hover { background: #2a3645; }
+.overlay-on { background: var(--accent); color: #082f49; font-weight: 600; }
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  color: white;
+  text-align: left;
+}
+.banner-critical { background: var(--crit); animation: pulse 1.2s infinite alternate; }
+.banner-notable { background: #92600a; }
+.banner-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+}
+.banner-text { font-variant-numeric: tabular-nums; }
+
+/* mobile ≥360px: stack panes, list under map (TR-3) */
+@media (max-width: 720px) {
+  .content { flex-direction: column; }
+  .side-pane { width: 100%; height: 40%; border-left: none; border-top: 1px solid var(--border); }
+  .map-pane { height: 60%; flex: none; }
+  .detail-pane { right: 0.75rem; left: 0.75rem; width: auto; top: 0.5rem; }
+}

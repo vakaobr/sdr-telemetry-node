@@ -1,0 +1,45 @@
+.map-container {
+  width: 100%;
+  height: 100%;
+  background: #0b0e14;
+}
+
+.ac-svg {
+  transition: transform 0.8s linear;
+  cursor: pointer;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.9));
+}
+
+.ac-svg-selected {
+  filter: drop-shadow(0 0 6px #38bdf8);
+}
+
+.ac-svg-flagged {
+  filter: drop-shadow(0 0 6px #f59e0b);
+}
+
+/* AIS vessels — teal, distinct from aircraft */
+.vessel-icon {
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
+  color: #2dd4bf;
+  text-shadow: 0 0 3px #000;
+  cursor: pointer;
+}
+.vessel-selected {
+  color: #5eead4;
+  font-size: 20px;
+  filter: drop-shadow(0 0 6px #2dd4bf);
+}
+
+/* dark map: dim ONLY the base raster tiles (scoped via the layer className), so
+   the OpenAIP overlay keeps its native colors instead of being inverted/muted */
+.base-tiles .leaflet-tile {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+/* airspace overlay: boost saturation/contrast so it pops on the dark base */
+.airspace-tiles .leaflet-tile {
+  filter: saturate(1.5) contrast(1.15) brightness(1.1);
+}

@@ -1,0 +1,27 @@
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+dist/
+*.egg-info/
+
+# node
+node_modules/
+web/dist/
+
+# local state
+config.yaml
+.env
+*.db
+*.db-wal
+*.db-shm
+data/media/
+
+# os/editor
+.DS_Store
+.idea/
+.vscode/
+web/*.tsbuildinfo
+/WhatsApp*

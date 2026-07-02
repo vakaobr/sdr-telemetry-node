@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sdr-telemetry-node/schemas/mqtt.schema.json",
+  "title": "MqttPayloads",
+  "description": "MQTT topic payloads. Topic tree: 03_ARCHITECTURE §5. All payloads carry ts (unix s); consumers are idempotent (QoS 1 = at-least-once).",
+  "oneOf": [
+    { "$ref": "#/definitions/Radio2Mode" },
+    { "$ref": "#/definitions/Radio2PassNext" },
+    { "$ref": "#/definitions/Radio2Health" },
+    { "$ref": "#/definitions/Radio2Command" },
+    { "$ref": "#/definitions/AtcActivity" },
+    { "$ref": "#/definitions/AisVessel" },
+    { "$ref": "#/definitions/SatellitePassEvent" },
+    { "$ref": "#/definitions/SysHealth" },
+    { "$ref": "#/definitions/AdsbInteresting" }
+  ],
+  "definitions": {
+    "Radio2Mode": {
+      "description": "topic: radio2/mode (retained, QoS1)",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "mode", "since", "reason"],
+      "properties": {
+        "ts": { "type": "integer" },
+        "mode": {
+          "type": "string",
+          "enum": ["atc", "ais", "satellite", "idle", "faulted"]
+        },
+        "since": { "type": "integer" },
+        "reason": {
+          "type": "string",
+          "enum": ["schedule", "preempt", "manual", "fault", "boot"]
+        },
+        "pid": { "type": ["integer", "null"] }
+      }
+    },
+    "Radio2PassNext": {
+      "description": "topic: radio2/pass/next (retained, QoS1); payload may be null-equivalent via satellite:null when no pass scheduled",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "satellite", "aos", "los", "maxEl"],
+      "properties": {
+        "ts": { "type": "integer" },
+        "satellite": { "type": ["string", "null"] },
+        "aos": { "type": ["integer", "null"] },
+        "los": { "type": ["integer", "null"] },
+        "maxEl": { "type": ["number", "null"] }
+      }
+    },
+    "Radio2Health": {
+      "description": "topic: radio2/health (retained, QoS1, LWT sets ok:false reason:offline)",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "ok"],
+      "properties": {
+        "ts": { "type": "integer" },
+        "ok": { "type": "boolean" },
+        "decoder": { "type": ["string", "null"] },
+        "uptimeS": { "type": ["integer", "null"] },
+        "reason": { "type": ["string", "null"] },
+        "tleAgeDays": { "type": ["number", "null"] }
+      }
+    },
+    "Radio2Command": {
+      "description": "topic: radio2/cmd (QoS1, not retained) — gateway-issued manual override",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "mode"],
+      "properties": {
+        "ts": { "type": "integer" },
+        "mode": {
+          "type": "string",
+          "enum": ["atc", "ais", "satellite", "idle", "auto"]
+        },
+        "durationS": { "type": ["integer", "null"], "minimum": 1 },
+        "force": { "type": "boolean", "default": false }
+      }
+    },
+    "AtcActivity": {
+      "description": "topic: atc/activity (QoS0)",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "channelMhz", "active"],
+      "properties": {
+        "ts": { "type": "integer" },
+        "channelMhz": { "type": "number" },
+        "active": { "type": "boolean" }
+      }
+    },
+    "AisVessel": {
+      "description": "topic: ais/vessel (QoS0)",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "mmsi", "lat", "lon"],
+      "properties": {
+        "ts": { "type": "integer" },
+        "mmsi": { "type": "integer" },
+        "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon": { "type": "number", "minimum": -180, "maximum": 180 },
+        "sogKt": { "type": ["number", "null"] },
+        "cogDeg": { "type": ["number", "null"] },
+        "name": { "type": ["string", "null"] },
+        "shipType": { "type": ["integer", "null"] }
+      }
+    },
+    "SatellitePassEvent": {
+      "description": "topic: satellite/pass/event (QoS1)",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "passId", "satellite", "status"],
+      "properties": {
+        "ts": { "type": "integer" },
+        "passId": { "type": "integer" },
+        "satellite": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["scheduled", "capturing", "captured", "decoding", "decoded", "failed"]
+        },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "note": { "type": ["string", "null"] }
+      }
+    },
+    "SysHealth": {
+      "description": "topic: sys/{node}/health (retained, QoS1, LWT sets ok:false)",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "ok", "cpuPct", "memMb", "tempC", "throttled", "diskFreePct"],
+      "properties": {
+        "ts": { "type": "integer" },
+        "ok": { "type": "boolean" },
+        "cpuPct": { "type": "number", "minimum": 0 },
+        "memMb": { "type": "number", "minimum": 0 },
+        "tempC": { "type": "number" },
+        "throttled": { "type": "boolean" },
+        "diskFreePct": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "AdsbInteresting": {
+      "description": "topic: adsb/interesting (QoS1)",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "icao", "severity", "rule"],
+      "properties": {
+        "ts": { "type": "integer" },
+        "icao": { "type": "string", "pattern": "^[0-9a-f]{6}$" },
+        "severity": { "type": "string", "enum": ["critical", "notable"] },
+        "rule": { "type": "string" },
+        "callsign": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

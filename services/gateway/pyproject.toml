@@ -1,0 +1,44 @@
+[project]
+name = "gateway"
+version = "0.1.0"
+description = "sdr-telemetry-node gateway: ADS-B ingest, state, enrichment, REST+WS, persistence"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "PyYAML>=6.0",
+    "httpx>=0.27",
+    "paho-mqtt>=2.1",
+    "aiosqlite>=0.20",
+    "websockets>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "respx>=0.21",
+    "ruff>=0.7",
+    "datamodel-code-generator>=0.26",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# generated code is exempt from style opinions
+extend-exclude = ["app/models/generated_*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

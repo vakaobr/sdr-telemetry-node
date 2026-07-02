@@ -1,0 +1,2 @@
+# RTL-SDR (RTL2832U) — world-readable for containerized decoders (LAN-trusted node)
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2838", MODE="0666"

@@ -1,0 +1,55 @@
+# Node B (tattoine-watcher-beacon, Pi 3B): shared-radio workhorse.
+# radio2 supervisor (SDR #2 orchestration) + Icecast (ATC audio, P8).
+#
+# ⚠️ Requires the Node B PSU swap first (under-voltage 0x50005 — see baseline.md)
+# AND the SDR #2 dongle (stx:0:28) relocated from Node A.
+# Decoder modes: ATC=P8 (live), AIS=P9, satellite=P10.
+# Set RADIO2_FAKE to exercise the supervisor with the scripted fake decoder.
+
+name: sdr-telemetry-node-b
+
+services:
+  icecast:
+    build:
+      context: ../..
+      dockerfile: docker/icecast/Dockerfile
+    image: sdr-telemetry-node/icecast:dev
+    container_name: icecast
+    restart: unless-stopped
+    ports:
+      - "8000:8000"                    # browser pulls ATC audio here
+    environment:
+      - ICECAST_SOURCE_PASSWORD=${ICECAST_SOURCE_PASSWORD:?set in .env}
+      - ICECAST_ADMIN_PASSWORD=${ICECAST_ADMIN_PASSWORD:-admin}
+    mem_limit: 48m
+    security_opt:
+      - no-new-privileges:true
+
+  radio2:
+    build:
+      context: ../..
+      dockerfile: docker/radio2/Dockerfile
+    image: sdr-telemetry-node/radio2:dev
+    container_name: radio2
+    restart: unless-stopped
+    depends_on:
+      - icecast
+    device_cgroup_rules:
+      - "c 189:* rwm"                  # USB (libusb) — SDR #2
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb:ro
+      - /opt/sdr-telemetry-node/config.yaml:/config/config.yaml:ro
+      - radio2-data:/data              # TLE cache
+    environment:
+      - CONFIG_PATH=/config/config.yaml
+      - TLE_PATH=/data/tles.txt
+      - ICECAST_SOURCE_PASSWORD=${ICECAST_SOURCE_PASSWORD:?set in .env}
+      - TZ=${TZ:-Europe/Lisbon}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # - RADIO2_FAKE=/opt/fake_decoder.py   # uncomment to dry-run without RF
+    mem_limit: 256m
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  radio2-data:
